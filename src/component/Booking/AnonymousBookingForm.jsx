@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../lib/api';
+import PaymentService from '../../services/paymentService';
 
 /**
  * AnonymousBookingForm Component
@@ -30,7 +31,8 @@ const AnonymousBookingForm = () => {
     mobile: '',
     address: '',
     subscription_months: 1,
-    amount: 0
+    amount: 0,
+    purpose: ''
   });
 
   useEffect(() => {
@@ -143,19 +145,68 @@ const AnonymousBookingForm = () => {
       return;
     }
 
+    // Date/time optional for anonymous booking; admin will coordinate details
+
     try {
       setSubmitting(true);
       setError('');
-      
-      const bookingData = {
-        ...formData,
+      // 1) Initiate Rs.1 token order
+      const order = await PaymentService.initAnonymousBookingTokenPayment({
         library_id: selectedLibrary,
-        amount: formData.amount
-      };
+        subscription_plan_id: null,
+        seat_id: null,
+        name: formData.name,
+        email: formData.email,
+        mobile: formData.mobile
+      });
 
-      const response = await apiClient.postAnonymous('/booking/anonymous-seat-booking', bookingData);
-      
-      setSuccess(true);
+      // 2) Open Razorpay and pay Rs.1 token
+      const Razorpay = await PaymentService.initializePaymentGateway();
+      await new Promise((resolve, reject) => {
+        const rzp = new Razorpay({
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Library Connekto',
+          description: 'Seat booking token payment',
+          order_id: order.id,
+          method: {
+            upi: true,
+            card: true,
+            netbanking: true,
+            wallet: true
+          },
+          upi: { flow: 'intent' },
+          handler: async (response) => {
+            try {
+              // 3) Verify token payment and create pending booking
+              await PaymentService.verifyAnonymousBookingTokenPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                library_id: selectedLibrary,
+                subscription_plan_id: null,
+                seat_id: null,
+                purpose: formData.purpose,
+                amount: formData.amount,
+              
+                // anonymous required fields
+                name: formData.name,
+                email: formData.email,
+                mobile: formData.mobile,
+                address: formData.address,
+                subscription_months: formData.subscription_months
+              });
+              setSuccess(true);
+              resolve();
+            } catch (e2) {
+              reject(e2);
+            }
+          },
+          modal: { ondismiss: () => reject(new Error('Payment cancelled')) }
+        });
+        rzp.open();
+      });
       // Reset form
       setFormData({
         name: '',
@@ -163,7 +214,8 @@ const AnonymousBookingForm = () => {
         mobile: '',
         address: '',
         subscription_months: 1,
-        amount: 0
+        amount: 0,
+        purpose: ''
       });
       setSelectedLibrary('');
       setSubscriptionPlans([]);
@@ -392,6 +444,8 @@ const AnonymousBookingForm = () => {
           </div>
         </div>
 
+        {/* Purpose removed for anonymous booking */}
+
         <div className="grid md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -403,7 +457,10 @@ const AnonymousBookingForm = () => {
               value={formData.mobile}
               onChange={handleInputChange}
               className="w-full p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
-              placeholder="Enter your mobile number"
+              placeholder="Enter 10-digit mobile number"
+              pattern="^[0-9]{10}$"
+              maxLength={10}
+              inputMode="numeric"
               required
             />
           </div>
@@ -476,7 +533,7 @@ const AnonymousBookingForm = () => {
             </span>
           </div>
           <p className="text-sm text-slate-400 mt-2">
-            Payment will be collected after admin approval
+            You will pay Rs.1 token fee now to submit your booking request. Remaining payment will be collected after admin approval.
           </p>
           {subscriptionPlans.length > 0 && (
             <p className="text-xs text-green-400 mt-1">

@@ -128,6 +128,82 @@ class PaymentService {
       }
     ];
   }
+
+  // Rs.1 token payment for student seat booking
+  static async initBookingTokenPayment({ library_id, subscription_plan_id, seat_id }) {
+    const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8000'
+    const res = await fetch(`${base}/api/v1/booking/student-seat-booking/payment-init`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+      },
+      body: JSON.stringify({ library_id, subscription_plan_id, seat_id })
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  }
+
+  static async verifyBookingTokenPayment({
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    library_id,
+    subscription_plan_id,
+    seat_id,
+    date,
+    start_time,
+    end_time,
+    purpose,
+    amount
+  }) {
+    const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8000'
+    const res = await fetch(`${base}/api/v1/booking/student-seat-booking/payment-verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+      },
+      body: JSON.stringify({
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        library_id,
+        subscription_plan_id,
+        seat_id,
+        date,
+        start_time,
+        end_time,
+        purpose,
+        amount
+      })
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  }
+
+  // Rs.1 token payment for anonymous booking (no auth)
+  static async initAnonymousBookingTokenPayment({ library_id, subscription_plan_id, seat_id, name, email, mobile }) {
+    const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8000'
+    const res = await fetch(`${base}/api/v1/booking/anonymous-seat-booking/payment-init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ library_id, subscription_plan_id, seat_id, name, email, mobile })
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  }
+
+  static async verifyAnonymousBookingTokenPayment(payload) {
+    const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8000'
+    const res = await fetch(`${base}/api/v1/booking/anonymous-seat-booking/payment-verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  }
 }
 
 export default PaymentService;

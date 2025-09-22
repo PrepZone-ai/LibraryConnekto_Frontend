@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
+import PaymentService from '../../services/paymentService';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
 
@@ -96,23 +97,60 @@ const BookSeat = () => {
 
     setBookingLoading(true);
     try {
-      const bookingData = {
+      // 1) Initiate Rs.1 token order
+      const order = await PaymentService.initBookingTokenPayment({
         library_id: selectedLibrary.id,
-        seat_id: selectedSeat.id,
         subscription_plan_id: selectedPlan.id,
-        amount: parseFloat(selectedPlan.discounted_amount || selectedPlan.amount),
-        date: bookingDetails.date,
-        start_time: bookingDetails.start_time,
-        end_time: bookingDetails.end_time,
-        purpose: bookingDetails.purpose
-      };
+        seat_id: selectedSeat.id
+      });
 
-      await apiClient.post('/booking/student-seat-booking', bookingData);
-      alert('Seat booking request submitted successfully!');
-      navigate('/student/dashboard');
+      // 2) Open Razorpay to pay Rs.1
+      const Razorpay = await PaymentService.initializePaymentGateway();
+      await new Promise((resolve, reject) => {
+        const rzp = new Razorpay({
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Library Connekto',
+          description: 'Seat booking token payment',
+          order_id: order.id,
+          method: {
+            upi: true,
+            card: true,
+            netbanking: true,
+            wallet: true
+          },
+          upi: { flow: 'intent' },
+          handler: async (response) => {
+            try {
+              // 3) Verify and create pending booking
+              await PaymentService.verifyBookingTokenPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                library_id: selectedLibrary.id,
+                subscription_plan_id: selectedPlan.id,
+                seat_id: selectedSeat.id,
+                date: bookingDetails.date,
+                start_time: bookingDetails.start_time,
+                end_time: bookingDetails.end_time,
+                purpose: bookingDetails.purpose,
+                amount: parseFloat(selectedPlan.discounted_amount || selectedPlan.amount)
+              });
+              alert('Token paid. Booking submitted for admin approval.');
+              navigate('/student/dashboard');
+              resolve();
+            } catch (e2) {
+              reject(e2);
+            }
+          },
+          modal: { ondismiss: () => reject(new Error('Payment cancelled')) }
+        });
+        rzp.open();
+      });
     } catch (error) {
       console.error('Error booking seat:', error);
-      alert('Failed to book seat. Please try again.');
+      alert(error.message || 'Failed to book seat. Please try again.');
     } finally {
       setBookingLoading(false);
     }

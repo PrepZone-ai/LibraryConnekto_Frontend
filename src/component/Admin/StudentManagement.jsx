@@ -35,6 +35,26 @@ const StudentManagement = () => {
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [autoDateMode, setAutoDateMode] = useState(true); // when true, end date auto-follows plan duration
 
+  // Derived: plan duration and days left based on selected dates
+  const { totalDays, daysLeft } = useMemo(() => {
+    try {
+      if (!newStudent.subscription_start || !newStudent.subscription_end) {
+        return { totalDays: null, daysLeft: null };
+      }
+      const start = new Date(newStudent.subscription_start);
+      const end = new Date(newStudent.subscription_end);
+      const today = new Date();
+      // Normalize times to midnight for day math consistency
+      const toMidnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const msPerDay = 1000 * 60 * 60 * 24;
+      const total = Math.max(0, Math.round((toMidnight(end) - toMidnight(start)) / msPerDay) + 1);
+      const left = Math.max(0, Math.round((toMidnight(end) - toMidnight(today)) / msPerDay));
+      return { totalDays: total, daysLeft: left };
+    } catch (_) {
+      return { totalDays: null, daysLeft: null };
+    }
+  }, [newStudent.subscription_start, newStudent.subscription_end]);
+
   useEffect(() => {
     if (userType !== 'admin') {
       navigate('/admin/auth');
@@ -568,6 +588,26 @@ const StudentManagement = () => {
                         <div>
                           <div className="text-white/80">Start: {new Date(student.subscription_start).toLocaleDateString()}</div>
                           <div className="text-white/80">End: {new Date(student.subscription_end).toLocaleDateString()}</div>
+                          {(() => {
+                            try {
+                              const end = new Date(student.subscription_end);
+                              const today = new Date();
+                              const toMidnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                              const msPerDay = 1000 * 60 * 60 * 24;
+                              const days = Math.max(0, Math.round((toMidnight(end) - toMidnight(today)) / msPerDay));
+                              const danger = days <= 7;
+                              return (
+                                <div className={`mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${danger ? 'bg-red-500/10 text-red-300 border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>
+                                  <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  {days} day{days === 1 ? '' : 's'} left
+                                </div>
+                              );
+                            } catch (_e) {
+                              return null;
+                            }
+                          })()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -720,6 +760,26 @@ const StudentManagement = () => {
                     />
                   </div>
                 </div>
+                {(totalDays !== null || daysLeft !== null) && (
+                  <div className="mt-1 text-xs text-white/80">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-lg bg-white/10 border border-white/20">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M5 11h14M5 19h14M5 11v8a2 2 0 002 2h10a2 2 0 002-2v-8" />
+                        </svg>
+                        {totalDays !== null ? `${totalDays} day${totalDays === 1 ? '' : 's'} duration` : '—'}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-lg border ${
+                        (daysLeft ?? 0) <= 7 ? 'bg-red-500/10 text-red-300 border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                      }`}>
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center">
                   <input
                     type="checkbox"
