@@ -63,10 +63,19 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email, password, userType) => {
+  const login = async (email, password, userType, mode = 'signin') => {
     try {
-      const endpoint = userType === 'admin' ? '/auth/admin/signin' : '/auth/student/signin';
-      const response = await apiClient.post(endpoint, { email, password });
+      let endpoint, response;
+      
+      if (mode === 'signup' && userType === 'admin') {
+        endpoint = '/auth/admin/signup';
+        response = await apiClient.post(endpoint, { email, password });
+        // For signup, we don't set tokens yet, just return success
+        return { success: true, message: 'Signup successful! Please verify your email.' };
+      } else {
+        endpoint = userType === 'admin' ? '/auth/admin/signin' : '/auth/student/signin';
+        response = await apiClient.post(endpoint, { email, password });
+      }
       
       setAuthToken(response.access_token);
       setUserType(userType);

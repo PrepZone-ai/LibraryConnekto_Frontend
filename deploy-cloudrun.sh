@@ -5,7 +5,7 @@ PROJECT_ID="${PROJECT_ID:-}"
 REGION="${REGION:-us-central1}"
 REPO="${REPO:-web-apps}"
 SERVICE="${SERVICE:-library-connekto}"
-API_BASE_URL="${API_BASE_URL:-}"
+API_BASE_URL="${API_BASE_URL:-https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1}"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "PROJECT_ID is required (export PROJECT_ID=your-gcp-project)" >&2

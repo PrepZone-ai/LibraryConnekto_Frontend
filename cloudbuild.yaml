@@ -7,7 +7,7 @@ substitutions:
   _REGION: us-central1
   _REPO: web-apps
   _SERVICE: library-connekto
-  _ENV_API_BASE_URL: ""
+  _ENV_API_BASE_URL: "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1"
 
 options:
   logging: CLOUD_LOGGING_ONLY

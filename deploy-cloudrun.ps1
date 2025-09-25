@@ -3,7 +3,7 @@ Param(
   [string]$Region = "us-central1",
   [string]$Repo = "web-apps",
   [string]$Service = "library-connekto",
-  [string]$ApiBaseUrl = ""
+  [string]$ApiBaseUrl = "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1"
 )
 
 if (-not $ProjectId) {

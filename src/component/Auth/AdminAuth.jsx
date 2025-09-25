@@ -75,9 +75,16 @@ export default function AdminAuth() {
           setError(result.error)
         }
       } else {
-        // For signup, we'll need to implement this in the API client
-        setMessage('Signup functionality will be implemented soon.')
-        setMode('signin')
+        // Admin signup
+        const result = await login(email, password, 'admin', 'signup')
+        if (result.success) {
+          setMessage('Signup successful! Please check your email to verify your account, then sign in.')
+          setMode('signin')
+          setEmail('')
+          setPassword('')
+        } else {
+          setError(result.error)
+        }
       }
     } catch (err) {
       setError(err.message || 'Request failed')

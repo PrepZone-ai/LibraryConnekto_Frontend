@@ -1,3 +1,12 @@
+title: LibraryConnekto Backend
+emoji: 🐢
+colorFrom: gray
+colorTo: green
+sdk: docker
+pinned: false
+license: apache-2.0
+short_description: library backend
+
 # Library Connekto – Frontend (React + Vite)
 
 Modern, responsive frontend for Library Connekto — a platform that connects students with smart libraries and empowers admins with management, analytics, booking and messaging tools.
@@ -77,13 +86,21 @@ npm run lint
 
 ## Environment
 
-Create a `.env` file in project root (already present in repo). Typical variables:
+Create a `.env` file in project root using the template provided. Copy `env.template` to `.env` and update the values:
 
 ```bash
+# Copy the template
+cp env.template .env
+
+# Edit .env file with your preferred editor
+# For local development:
 VITE_API_BASE_URL=http://localhost:8000/api/v1
+
+# For production (already configured in deployment):
+VITE_API_BASE_URL=https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
 ```
 
-The API client reads `VITE_API_BASE_URL` in `src/lib/api.js`. For production, set it to your deployed backend URL.
+The API client reads `VITE_API_BASE_URL` in `src/lib/api.js`. The production URL is already configured in all deployment files.
 
 ## Project Structure
 
@@ -168,6 +185,53 @@ Configure the base URL with `VITE_API_BASE_URL`.
 - If API calls fail locally, confirm `VITE_API_BASE_URL` and CORS settings on backend.
 - For Windows line-endings warnings from Git, you can set `git config core.autocrlf true` or keep defaults; it does not affect runtime.
 
+## Deploy to Vercel (Recommended)
+
+The easiest way to deploy Library Connekto is using Vercel. See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for detailed instructions.
+
+### Quick Vercel Deployment
+
+#### Option 1: Vercel Dashboard (Recommended)
+1. **Import to Vercel**
+   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Import your GitHub repository
+   - Framework: Vite
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+
+2. **Set Environment Variable**
+   ```
+   VITE_API_BASE_URL=https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+   ```
+
+3. **Deploy**
+   - Click Deploy
+   - Your app will be live at the provided Vercel URL
+
+#### Option 2: Vercel CLI
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy using the provided script
+./deploy-vercel.sh        # Linux/macOS
+# or
+./deploy-vercel.ps1       # Windows PowerShell
+```
+
+#### Option 3: Manual CLI Deployment
+```bash
+# Login to Vercel
+vercel login
+
+# Set environment variable
+vercel env add VITE_API_BASE_URL
+# Enter: https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+
+# Deploy
+vercel --prod
+```
+
 ## Deploy to Google Cloud Run (Docker)
 
 All deployment files are included in this folder and the image serves the built app via Nginx on port 8080.
@@ -204,7 +268,8 @@ export PROJECT_ID=your-gcp-project
 export REGION=us-central1
 export REPO=web-apps
 export SERVICE=library-connekto
-export API_BASE_URL=https://your-backend-domain/api/v1
+# API_BASE_URL is already set to production URL by default
+export API_BASE_URL=https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
 
 ./deploy-cloudrun.sh
 ```
@@ -212,7 +277,7 @@ export API_BASE_URL=https://your-backend-domain/api/v1
 ### Deploy using helper script (Windows PowerShell)
 
 ```powershell
-./deploy-cloudrun.ps1 -ProjectId "your-gcp-project" -Region "us-central1" -Repo "web-apps" -Service "library-connekto" -ApiBaseUrl "https://your-backend-domain/api/v1"
+./deploy-cloudrun.ps1 -ProjectId "your-gcp-project" -Region "us-central1" -Repo "web-apps" -Service "library-connekto" -ApiBaseUrl "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1"
 ```
 
 ### Deploy via Cloud Build (CI/CD)

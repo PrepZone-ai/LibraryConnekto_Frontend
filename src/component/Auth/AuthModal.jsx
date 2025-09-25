@@ -104,10 +104,20 @@ export default function AuthModal({ open, role = 'student', onClose }) {
           </form>
 
           <div className="mt-3 text-sm text-slate-300">
-            {mode === 'signin' ? (
-              <button onClick={() => { setMode('signup'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Don't have an account? Sign Up</button>
+            {role === 'admin' ? (
+              // Admin can switch between signin and signup
+              mode === 'signin' ? (
+                <button onClick={() => { setMode('signup'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Don't have an account? Sign Up</button>
+              ) : (
+                <button onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Already have an account? Sign In</button>
+              )
             ) : (
-              <button onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Already have an account? Sign In</button>
+              // Students can only sign in, signup is handled by admins
+              mode === 'signin' ? (
+                <p className="text-slate-400 text-xs">Students are registered by library admins. Contact your library for account creation.</p>
+              ) : (
+                <button onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Back to Sign In</button>
+              )
             )}
           </div>
         </div>
