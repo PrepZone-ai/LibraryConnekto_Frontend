@@ -1,4 +1,4 @@
-## Multi-stage Dockerfile for Vite + React app served by Nginx on Cloud Run
+## Multi-stage Dockerfile for Vite + React app served by Nginx
 
 # --- Build Stage ---
 FROM node:18-alpine AS builder
@@ -26,7 +26,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Use custom nginx config with SPA fallback and gzip
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Cloud Run expects the container to listen on $PORT (default 8080)
+# Container listens on $PORT (default 8080)
 ENV PORT=8080
 EXPOSE 8080
 

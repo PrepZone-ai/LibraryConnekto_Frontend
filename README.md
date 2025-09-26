@@ -232,67 +232,22 @@ vercel env add VITE_API_BASE_URL
 vercel --prod
 ```
 
-## Deploy to Google Cloud Run (Docker)
+## Docker Support (Optional)
 
-All deployment files are included in this folder and the image serves the built app via Nginx on port 8080.
+The project includes Docker configuration for containerized deployment if needed:
 
 ### Files
 
 - `Dockerfile`: Multi-stage build (Node -> Nginx), SPA fallback, healthcheck
 - `nginx.conf`: Gzip + cache headers + SPA routing
 - `.dockerignore`: Speeds up Docker builds
-- `cloudbuild.yaml`: Cloud Build pipeline to build, push to Artifact Registry, and deploy to Cloud Run
-- `deploy-cloudrun.sh` / `deploy-cloudrun.ps1`: Local helper scripts to build/push/deploy
 
-### One-time GCP setup
-
-1. Authenticate: `gcloud auth login`
-2. Set project: `gcloud config set project <PROJECT_ID>`
-3. Enable services:
-   - `gcloud services enable artifactregistry.googleapis.com run.googleapis.com cloudbuild.googleapis.com`
-4. Create Artifact Registry repo (example):
-   - `gcloud artifacts repositories create web-apps --repository-format=docker --location=us-central1`
-
-### Local build and run
+### Local Docker build and run
 
 ```bash
 docker build -t library-connekto:local --build-arg VITE_API_BASE_URL=http://localhost:8000/api/v1 .
 docker run -p 8080:8080 library-connekto:local
 # Visit http://localhost:8080
-```
-
-### Deploy using helper script (Linux/macOS)
-
-```bash
-export PROJECT_ID=your-gcp-project
-export REGION=us-central1
-export REPO=web-apps
-export SERVICE=library-connekto
-# API_BASE_URL is already set to production URL by default
-export API_BASE_URL=https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
-
-./deploy-cloudrun.sh
-```
-
-### Deploy using helper script (Windows PowerShell)
-
-```powershell
-./deploy-cloudrun.ps1 -ProjectId "your-gcp-project" -Region "us-central1" -Repo "web-apps" -Service "library-connekto" -ApiBaseUrl "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1"
-```
-
-### Deploy via Cloud Build (CI/CD)
-
-Create a trigger on the repo and use the provided `cloudbuild.yaml`. Set substitutions as needed:
-
-- `_REGION` (default `us-central1`)
-- `_REPO` (default `web-apps`)
-- `_SERVICE` (default `library-connekto`)
-- `_ENV_API_BASE_URL` (backend API base URL to embed at build time)
-
-You can also kick off a manual build from this folder:
-
-```bash
-gcloud builds submit --substitutions=_REGION=us-central1,_REPO=web-apps,_SERVICE=library-connekto,_ENV_API_BASE_URL=https://your-backend-domain/api/v1 .
 ```
 
 ## License
