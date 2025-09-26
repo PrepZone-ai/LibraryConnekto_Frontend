@@ -7,7 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:icons": "powershell -ExecutionPolicy Bypass -File generate-icons.ps1",
+    "generate:icons:unix": "chmod +x generate-icons.sh && ./generate-icons.sh",
+    "create:launcher": "powershell -ExecutionPolicy Bypass -File create-launcher-icon.ps1",
+    "build:apk": "powershell -ExecutionPolicy Bypass -File build-apk.ps1",
+    "build:aab": "powershell -ExecutionPolicy Bypass -File build-aab.ps1",
+    "build:apk:unix": "chmod +x build-apk.sh && ./build-apk.sh",
+    "build:aab:unix": "chmod +x build-aab.sh && ./build-aab.sh",
+    "build:all": "npm run generate:icons && npm run create:launcher && npm run build:apk && npm run build:aab"
   },
   "dependencies": {
     "aos": "^2.3.4",

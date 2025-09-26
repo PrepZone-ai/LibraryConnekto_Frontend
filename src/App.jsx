@@ -8,6 +8,8 @@ import Contact from './component/Contact/Contact'
 import AdminAuth from './component/Auth/AdminAuth'
 import StudentLogin from './component/Auth/StudentLogin'
 import StudentSetPassword from './component/Auth/StudentSetPassword'
+import EmailVerificationSuccess from './component/Auth/EmailVerificationSuccess'
+import EmailVerificationError from './component/Auth/EmailVerificationError'
 
 // Admin Components
 import AdminDashboard from './component/Admin/AdminDashboard'
@@ -49,6 +51,10 @@ function App() {
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/student/login" element={<StudentLogin />} />
           <Route path="/student/set-password" element={<StudentSetPassword />} />
+          
+          {/* Email Verification Routes */}
+          <Route path="/auth/verify-success" element={<EmailVerificationSuccess />} />
+          <Route path="/auth/verify-error" element={<EmailVerificationError />} />
 
           {/* Admin Protected Routes */}
           <Route path="/admin/details" element={<AdminDetailsForm />} />
