@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_BASE_URL": "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1"
+  },
+  "build": {
+    "env": {
+      "VITE_API_BASE_URL": "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1"
+    }
+  }
+}
