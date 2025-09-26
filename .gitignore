@@ -7,18 +7,37 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Node/Vite
+node_modules/
+dist/
+dist-ssr/
 *.local
 
-# Editor directories and files
+# Editor/OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Android/Gradle (nested project)
+android/.gradle/
+android/.idea/
+android/local.properties
+android/.cxx/
+android/.settings/
+android/build/
+android/app/build/
+android/**/build/
+android/**/.externalNativeBuild/
+
+# Release artifacts
+Library-Connekto-Release.aab
+Library-Connekto-Release.apk
+
+# Keystores (never commit)
+android/app/*.keystore
