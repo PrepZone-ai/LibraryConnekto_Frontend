@@ -206,19 +206,19 @@ export default function About() {
   const team = [
 [
   {
-    name: Sandeep Kumar,
+    name: "Sandeep Kumar",
     role: "Entrepreneur & Innovator",
     description: "Driven entrepreneur with a passion for creating impactful solutions in technology and education sectors",
     expertise: "Startup Strategy • Business Development • Product Innovation • Leadership • Generative AI & Tech Solutions"
   },
   {
-    name: Mayank Singh Tomar,
+    name: "Mayank Singh Tomar",
     role: "CTO & Tech Innovator",
     description: "Passionate about AI and full-stack development, focused on building innovative technology solutions",
     expertise: "AI & Technology • ReactJS & Python • Generative AI • Product Development • Tech Leadership"
   },
   {
-    name: Anshul Kumar,
+    name: "Anshul Kumar",
     role: "Head of Operations",
     description: "Passionate about designing scalable processes and leading operational excellence",
     expertise: "Operational Strategy • Process Design • Project Execution • Growth Enablement"
