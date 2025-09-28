@@ -465,7 +465,7 @@ export default function Contact() {
             </h2>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
             {offices.map((office, index) => (
               <OfficeCard
                 key={index}
