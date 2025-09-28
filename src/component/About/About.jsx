@@ -112,7 +112,7 @@ function TimelineItem({ year, title, description, delay = 0 }) {
   );
 }
 
-function TeamCard({ name, role, description, expertise, delay = 0 }) {
+function TeamCard({ name, role, email, description, expertise, delay = 0 }) {
   return (
     <div 
       className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group text-center"
@@ -123,7 +123,8 @@ function TeamCard({ name, role, description, expertise, delay = 0 }) {
         {name.split(' ').map(n => n[0]).join('')}
       </div>
       <h3 className="text-xl font-bold text-white mb-2">{name}</h3>
-      <div className="text-purple-400 font-semibold mb-4">{role}</div>
+      <div className="text-purple-400 font-semibold mb-2">{role}</div>
+      <div className="text-slate-400 text-sm mb-4">{email}</div>
       <p className="text-slate-300 mb-4 leading-relaxed">{description}</p>
       <div className="text-sm text-slate-400 font-medium">{expertise}</div>
     </div>
@@ -353,6 +354,7 @@ export default function About() {
                 key={index}
                 name={member.name}
                 role={member.role}
+                email={member.email}
                 description={member.description}
                 expertise={member.expertise}
                 delay={index * 100}
