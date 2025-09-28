@@ -215,7 +215,7 @@ export default function Contact() {
       title: "Email Support",
       status: "Available",
       description: "Get detailed help via email",
-      contact: "support@libraryconnekto.com",
+      contact: "support@libraryconnekto.me",
       timing: "Within 24 hours",
       note: "Best for detailed queries"
     },
@@ -224,7 +224,7 @@ export default function Contact() {
       title: "Phone Support",
       status: "Available",
       description: "Speak directly with our team",
-      contact: "+91 98765 43210",
+      contact: "+91 9982385483",
       timing: "Mon-Fri, 9 AM - 6 PM",
       note: "Urgent issues only"
     },
@@ -252,24 +252,17 @@ export default function Contact() {
 
   const offices = [
     {
-      city: "Mumbai",
-      address: "Tech Park, Andheri East, Mumbai - 400069",
+      city: "Lucknow",
+      address: "Tiwariganj uttardhona Lucknow - 226028",
       phone: "+91 98765 43210",
-      email: "mumbai@libraryconnekto.com",
+      email: "support@libraryconnekto.me",
       hours: "Mon-Fri: 9 AM - 6 PM"
     },
     {
-      city: "Bangalore",
-      address: "Electronic City, Bangalore - 560100",
+      city: "Agra",
+      address: "KheriaMod Agra - 226001",
       phone: "+91 98765 43211",
-      email: "bangalore@libraryconnekto.com",
-      hours: "Mon-Fri: 9 AM - 6 PM"
-    },
-    {
-      city: "Delhi",
-      address: "Connaught Place, New Delhi - 110001",
-      phone: "+91 98765 43212",
-      email: "delhi@libraryconnekto.com",
+      email: "support@libraryconnekto.me",
       hours: "Mon-Fri: 9 AM - 6 PM"
     }
   ];
