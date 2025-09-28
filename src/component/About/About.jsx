@@ -204,7 +204,6 @@ export default function About() {
   ];
 
   const team = [
-[
   {
     name: "Sandeep Kumar",
     role: "Entrepreneur & Innovator",
