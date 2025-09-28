@@ -177,27 +177,27 @@ export default function About() {
 
   const timeline = [
     {
-      year: "2020",
+      year: "2025",
       title: "Company Founded",
       description: "Started with a vision to digitize library management in India"
     },
     {
-      year: "2021",
+      year: "2025",
       title: "First 50 Libraries",
       description: "Onboarded our first 50 partner libraries across Mumbai and Delhi"
     },
     {
-      year: "2022",
+      year: "2026",
       title: "AI Integration",
       description: "Launched AI-powered analytics and smart attendance systems"
     },
     {
-      year: "2023",
+      year: "2026",
       title: "National Expansion",
       description: "Expanded to 500+ libraries across 15 states in India"
     },
     {
-      year: "2024",
+      year: "2027",
       title: "50K+ Students",
       description: "Reached milestone of 50,000+ active students on our platform"
     }
@@ -205,23 +205,24 @@ export default function About() {
 
   const team = [
     {
-      name: "Rajesh Kumar",
-      role: "Founder & CEO",
-      description: "Former library owner with 15+ years of experience in education sector",
-      expertise: "Education & Business Strategy • Founded 3 successful libraries"
-    },
-    {
-      name: "Priya Sharma",
-      role: "CTO",
-      description: "Tech expert with expertise in AI and mobile app development",
-      expertise: "AI & Technology • 10+ years in tech industry"
-    },
-    {
-      name: "Amit Patel",
-      role: "Head of Operations",
-      description: "Operations specialist focused on scaling library networks",
-      expertise: "Operations & Scaling • Scaled 100+ businesses"
+      "name": "Sandeep Kumar",
+      "role": "Entrepreneur & Innovator",
+      "description": "Driven entrepreneur with a passion for creating impactful solutions in technology and education sectors",
+      "expertise": "Startup Strategy • Business Development • Product Innovation • Leadership • Generative AI & Tech Solutions"
     }
+    {
+      "name": "Mayank Singh Tomar",
+      "role": "CTO & Tech Innovator",
+      "description": "Passionate about AI and full-stack development, focused on building innovative technology solutions",
+      "expertise": "AI & Technology • ReactJS & Python • Generative AI • Product Development • Tech Leadership"
+    }
+    {
+      "name": "Amit Diwakar",
+      "role": "Head of Operations",
+      "description": "Passionate about designing scalable processes and leading operational excellence",
+      "expertise": "Operational Strategy • Process Design • Project Execution • Growth Enablement"
+    }
+
   ];
 
   return (
