@@ -62,11 +62,6 @@
 
         </activity>
 
-        <!-- This service is required for TWA verification -->
-        <service
-            android:name="com.google.androidbrowserhelper.trusted.FocusActivity"
-            android:exported="true" />
-
         <!-- This activity is required for TWA verification -->
         <activity
             android:name="com.google.androidbrowserhelper.trusted.FocusActivity"
