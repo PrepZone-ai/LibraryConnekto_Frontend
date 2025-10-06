@@ -24,7 +24,7 @@ try {
 # Set environment variable for production
 Write-Host "⚙️  Setting environment variables..." -ForegroundColor Blue
 try {
-    $env:VITE_API_BASE_URL = "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1"
+    $env:VITE_API_BASE_URL = "https://ddlsandeep7-libraryconnekto1.hf.space/api/v1"
     vercel env add VITE_API_BASE_URL production
     Write-Host "✅ Environment variable set" -ForegroundColor Green
 } catch {

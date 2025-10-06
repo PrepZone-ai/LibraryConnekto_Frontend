@@ -20,7 +20,7 @@ fi
 
 # Set environment variable for production
 echo "⚙️  Setting environment variables..."
-vercel env add VITE_API_BASE_URL production <<< "https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1" || echo "Environment variable may already exist"
+vercel env add VITE_API_BASE_URL production <<< "https://ddlsandeep7-libraryconnekto1.hf.space/api/v1" || echo "Environment variable may already exist"
 
 # Deploy to production
 echo "📦 Deploying to Vercel..."

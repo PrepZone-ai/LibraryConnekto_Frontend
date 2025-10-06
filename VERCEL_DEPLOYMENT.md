@@ -6,7 +6,7 @@ This guide will help you deploy the Library Connekto frontend to Vercel with the
 
 1. A Vercel account (sign up at [vercel.com](https://vercel.com))
 2. The Library Connekto frontend repository
-3. Backend API running at: `https://libraryconnekto-api-324578194548.us-central1.run.app`
+3. Backend API running at: `https://ddlsandeep7-libraryconnekto1.hf.space`
 
 ## Deployment Steps
 
@@ -28,7 +28,7 @@ This guide will help you deploy the Library Connekto frontend to Vercel with the
    - Add the following variable:
      ```
      Name: VITE_API_BASE_URL
-     Value: https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+     Value: https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
      Environment: Production, Preview, Development
      ```
 
@@ -58,7 +58,7 @@ This guide will help you deploy the Library Connekto frontend to Vercel with the
 4. **Set Environment Variables**
    ```bash
    vercel env add VITE_API_BASE_URL
-   # Enter: https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+   # Enter: https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
    ```
 
 5. **Redeploy with Environment Variables**
@@ -71,7 +71,7 @@ This guide will help you deploy the Library Connekto frontend to Vercel with the
 ### Production Environment
 The production environment is automatically configured to use:
 ```
-VITE_API_BASE_URL=https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+VITE_API_BASE_URL=https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
 ```
 
 ### Local Development
