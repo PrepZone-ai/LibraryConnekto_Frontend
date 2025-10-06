@@ -1,7 +1,7 @@
 // Test script to verify API connection
 // Run with: node test-api.js
 
-const API_BASE_URL = 'https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1';
+const API_BASE_URL = 'https://ddlsandeep7-libraryconnekto1.hf.space/api/v1';
 
 async function testAPI() {
   console.log('🔍 Testing API connection...');

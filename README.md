@@ -97,7 +97,7 @@ cp env.template .env
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 
 # For production (already configured in deployment):
-VITE_API_BASE_URL=https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+VITE_API_BASE_URL=https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
 ```
 
 The API client reads `VITE_API_BASE_URL` in `src/lib/api.js`. The production URL is already configured in all deployment files.
@@ -201,7 +201,7 @@ The easiest way to deploy Library Connekto is using Vercel. See [VERCEL_DEPLOYME
 
 2. **Set Environment Variable**
    ```
-   VITE_API_BASE_URL=https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+   VITE_API_BASE_URL=https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
    ```
 
 3. **Deploy**
@@ -226,7 +226,7 @@ vercel login
 
 # Set environment variable
 vercel env add VITE_API_BASE_URL
-# Enter: https://libraryconnekto-api-324578194548.us-central1.run.app/api/v1
+# Enter: https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
 
 # Deploy
 vercel --prod
