@@ -36,6 +36,10 @@ import StudentAttendance from './component/Student/StudentAttendance'
 import AttendanceHistory from './component/Student/AttendanceHistory'
 import StudentProfile from './component/Student/StudentProfile'
 
+// Payment Components
+import PaymentConfirmation from './component/Payment/PaymentConfirmation'
+import PaymentSuccess from './component/Payment/PaymentSuccess'
+
 function App() {
   return (
     <AuthProvider>
@@ -55,6 +59,10 @@ function App() {
           {/* Email Verification Routes */}
           <Route path="/auth/verify-success" element={<EmailVerificationSuccess />} />
           <Route path="/auth/verify-error" element={<EmailVerificationError />} />
+
+          {/* Payment Routes */}
+          <Route path="/payment/:bookingId" element={<PaymentConfirmation />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
 
           {/* Admin Protected Routes */}
           <Route path="/admin/details" element={<AdminDetailsForm />} />
