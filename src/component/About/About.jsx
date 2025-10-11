@@ -3,6 +3,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
+import DownloadAppButton from '../common/DownloadAppButton';
 import { 
   RocketIcon, UsersIcon, TargetIcon, ShieldIcon, 
   ClockIcon, LightningIcon, StarIcon, QuoteIcon,
@@ -254,13 +255,14 @@ export default function About() {
               and empowering library owners with smart management solutions.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
+            <div className="flex flex-col lg:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
               <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105">
                 Join Our Mission
               </button>
               <button className="px-8 py-4 border border-purple-400/50 text-purple-300 font-bold rounded-xl hover:bg-purple-500/10 transition-all duration-300 hover:scale-105">
                 Contact Us
               </button>
+              <DownloadAppButton variant="secondary" size="default" />
             </div>
           </div>
         </div>

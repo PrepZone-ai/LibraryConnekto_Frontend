@@ -6,6 +6,7 @@ import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import SelectRoleModal from '../Auth/SelectRoleModal';
+import DownloadAppButton from '../common/DownloadAppButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   RocketIcon, AnalyticsIcon, UsersIcon, SeatIcon, MoneyIcon, 
@@ -112,28 +113,35 @@ export default function Home() {
               <p className="mt-6 text-lg sm:text-xl md:text-2xl text-slate-300 font-medium leading-relaxed max-w-3xl">
                 Turn your library into a smart, profitable business with our all-in-one management platform.
               </p>
-              <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                <button onClick={handleAuthAction} className="btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40">
-                  {selectedRole === 'admin' ? 'Register Your Library' : 'Get Started'}
-                  <svg className="ml-2 w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-10 flex flex-col lg:flex-row items-center justify-center gap-4">
+                <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-sm font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300 min-w-[200px]">
+                  <span className="text-center">
+                    {selectedRole === 'admin' ? 'Register Your Library' : 'Get Started'}
+                  </span>
+                  <svg className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </button>
                 {!isLoggedIn && selectedRole ? (
                   selectedRole === 'admin' ? (
-                    <button onClick={handleAuthAction} className="btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
-                      Sign In
+                    <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 px-8 py-4 text-sm font-bold text-white hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 min-w-[140px]">
+                      <span className="text-center">Sign In</span>
                     </button>
                   ) : (
-                    <a href="#book-seat" className="btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
-                      Book Your Seat
+                    <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 px-8 py-4 text-sm font-bold text-white hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 min-w-[160px]">
+                      <span className="text-center">Book Your Seat</span>
                     </a>
                   )
                 ) : (
-                  <a href="#book-seat" className="btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
-                    Book Your Seat
+                  <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 px-8 py-4 text-sm font-bold text-white hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 min-w-[160px]">
+                    <span className="text-center">Book Your Seat</span>
                   </a>
                 )}
+                <DownloadAppButton 
+                  variant="secondary" 
+                  size="large" 
+                  className="min-w-[160px] bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300"
+                />
               </div>
               <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-2xl">
                 <Stat value="50K+" label="Active Students" />

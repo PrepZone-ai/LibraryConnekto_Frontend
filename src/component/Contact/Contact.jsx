@@ -3,6 +3,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
+import DownloadAppButton from '../common/DownloadAppButton';
 import { 
   RocketIcon, UsersIcon, TargetIcon, ShieldIcon, 
   ClockIcon, LightningIcon, StarIcon, QuoteIcon,
@@ -311,6 +312,9 @@ export default function Contact() {
             <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-8" data-aos="fade-up" data-aos-delay="200">
               Have questions about Library Connekto? Our expert team is here to help you transform your library into a smart study hub.
             </p>
+            <div className="flex flex-col lg:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
+              <DownloadAppButton variant="secondary" size="default" />
+            </div>
           </div>
         </div>
       </section>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import DownloadAppSection from '../common/DownloadAppSection';
 
 export default function Footer() {
   return (
@@ -170,47 +171,7 @@ export default function Footer() {
         
         {/* Mobile App Section */}
         <div className="mt-16 pt-8 border-t border-slate-700/50">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-white mb-4">Download Our Mobile App</h3>
-            <p className="text-slate-300 mb-6">Access your library management on the go with our mobile app</p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              {/* QR Code */}
-              <div className="bg-white p-4 rounded-xl shadow-lg">
-                <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <div className="text-center text-gray-600">
-                    <svg className="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M3 3h7v7H3V3zm1 1v5h5V4H4zm7-1h7v7h-7V3zm1 1v5h5V4h-5zM3 11h7v7H3v-7zm1 1v5h5v-5H4zm7 0h7v7h-7v-7zm1 1v5h5v-5h-5z"/>
-                    </svg>
-                    <div className="text-xs">QR Code</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Download Links */}
-              <div className="flex flex-col gap-4">
-                <a href="#download-ios" className="flex items-center gap-3 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                  </svg>
-                  <div className="text-left">
-                    <div className="text-sm">Download on the</div>
-                    <div className="text-lg font-semibold">App Store</div>
-                  </div>
-                </a>
-                
-                <a href="#download-android" className="flex items-center gap-3 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.0589 13.8533 7.8505 12 7.8505s-3.5902.2084-5.1367.5954L4.841 4.943a.416.416 0 00-.5676-.1521.416.416 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/>
-                  </svg>
-                  <div className="text-left">
-                    <div className="text-sm">Get it on</div>
-                    <div className="text-lg font-semibold">Google Play</div>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
+          <DownloadAppSection />
         </div>
 
         {/* Bottom Bar */}
