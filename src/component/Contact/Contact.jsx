@@ -297,8 +297,8 @@ export default function Contact() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%239C92AC%22%20fill-opacity%3D%220.1%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 w-full">
-          <div className="text-center max-w-4xl mx-auto">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 w-full relative z-10">
+          <div className="text-center max-w-4xl mx-auto relative z-20">
             <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25" data-aos="fade-up">
               <SupportIcon className="w-4 h-4" />
               <span>24/7 Support Coming Soon</span>
@@ -316,7 +316,7 @@ export default function Contact() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-slate-900/50">
+      <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
             {stats.map((stat, index) => (
@@ -333,7 +333,7 @@ export default function Contact() {
       </section>
 
       {/* Contact Methods Section */}
-      <section className="py-20">
+      <section className="relative py-20 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
@@ -364,7 +364,7 @@ export default function Contact() {
       </section>
 
       {/* Contact Form Section */}
-      <section className="py-20 bg-slate-900/50">
+      <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
@@ -457,7 +457,7 @@ export default function Contact() {
       </section>
 
       {/* Offices Section */}
-      <section className="py-20">
+      <section className="relative py-20 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
@@ -482,7 +482,7 @@ export default function Contact() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-slate-900/50">
+      <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">

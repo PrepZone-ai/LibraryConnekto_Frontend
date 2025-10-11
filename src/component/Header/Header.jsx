@@ -492,13 +492,13 @@ export default function Header() {
         </div>
 
           {/* Mobile Menu */}
-        <div className={`md:hidden transition-all duration-300 overflow-hidden ${
-          isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        <div className={`md:hidden transition-all duration-300 overflow-hidden mobile-menu-container ${
+          isMobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
         }`}>
-          <div className="py-4 space-y-2 border-t border-slate-700/50 mt-4">
+          <div className="py-6 space-y-4 border-t border-slate-700/50 mt-4 bg-slate-900/95 backdrop-blur-xl mobile-menu-content">
             {/* Mobile Role Display - Clickable to Change Role */}
             {!isLoggedIn && selectedRole && (
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-3 mb-4">
                 <button 
                   onClick={() => { closeMobileMenu(); setShowRoleModal(true); }}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 hover:from-purple-500/30 hover:to-pink-500/30 hover:border-purple-400/50 transition-all duration-200 group"
@@ -523,60 +523,212 @@ export default function Header() {
                 </button>
               </div>
             )}
-            {isHome ? (
-              <>
-                <Link 
-                  to="/" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Home
-                </Link>
-                {isLoggedIn && (
-                  <button 
-                    onClick={() => { closeMobileMenu(); navigate(userType === 'admin' ? '/admin/dashboard' : '/student/dashboard'); }}
-                    className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+            {/* Navigation Links Section */}
+            <div className="space-y-2 mobile-menu-section">
+              {isHome ? (
+                <>
+                  <Link 
+                    to="/" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
                   >
-                    Dashboard
-                  </button>
-                )}
-                <Link 
-                  to="/services" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/services' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Services
-                </Link>
-                <Link 
-                  to="/about" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/about' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  About
-                </Link>
-                <Link 
-                  to="/contact" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/contact' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Contact
-                </Link>
+                    Home
+                  </Link>
+                  {isLoggedIn && (
+                    <button 
+                      onClick={() => { closeMobileMenu(); navigate(userType === 'admin' ? '/admin/dashboard' : '/student/dashboard'); }}
+                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                    >
+                      Dashboard
+                    </button>
+                  )}
+                  <Link 
+                    to="/services" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/services' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    Services
+                  </Link>
+                  <Link 
+                    to="/about" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/about' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    About
+                  </Link>
+                  <Link 
+                    to="/contact" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/contact' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    Contact
+                  </Link>
+                </>
+                ) : !isLoggedIn ? (
+                <>
+                  <Link 
+                    to="/" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    Home
+                  </Link>
+                  <Link 
+                    to="/services" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/services' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    Services
+                  </Link>
+                  <Link 
+                    to="/about" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/about' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    About
+                  </Link>
+                  <Link 
+                    to="/contact" 
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                      location.pathname === '/contact' 
+                        ? 'text-purple-400 bg-purple-500/10' 
+                        : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                    }`}
+                    onClick={closeMobileMenu}
+                  >
+                    Contact
+                  </Link>
+                </>
+                ) : (
+                <>
+                  {userType === 'admin' ? (
+                    <>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Home
+                      </button>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/admin/dashboard'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Dashboard
+                      </button>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/admin/students'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Students
+                      </button>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/admin/messages'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Messages
+                      </button>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/admin/profile'); }} 
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200 flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Profile
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Home
+                      </button>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/student/dashboard'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Dashboard
+                      </button>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/student/messages'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Messages
+                      </button>
+                      <button 
+                        onClick={() => { closeMobileMenu(); navigate('/student/profile'); }} 
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200 flex items-center gap-2"
+                      >
+                        {studentProfile ? (
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden border border-purple-400/50">
+                              {studentProfile.profile_image ? (
+                                <img 
+                                  src={studentProfile.profile_image} 
+                                  alt="Profile" 
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                  <span className="text-white text-sm font-bold">
+                                    {studentProfile.name?.charAt(0)?.toUpperCase() || 'S'}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">{studentProfile.name || 'Student'}</span>
+                              <span className="text-xs text-slate-400">ID: {studentProfile.student_id || 'N/A'}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Profile
+                          </>
+                        )}
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* CTA Button Section */}
+            {isHome && (
+              <div className="pt-4 border-t border-slate-700/50 mobile-menu-section">
                 <button 
                   onClick={() => { 
                     closeMobileMenu(); 
@@ -589,7 +741,7 @@ export default function Header() {
                       }
                     }
                   }}
-                  className="block w-full text-left px-4 py-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold text-center shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/30 transition-all duration-200"
+                  className="block w-full text-left px-4 py-4 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold text-center shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/30 transition-all duration-200 mb-4"
                 >
                   <div className="flex items-center justify-center">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -598,152 +750,11 @@ export default function Header() {
                     {selectedRole === 'admin' ? 'Register Your Library' : 'Book Your Seat'}
                   </div>
                 </button>
-              </>
-            ) : !isLoggedIn ? (
-              <>
-                <Link 
-                  to="/" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Home
-                </Link>
-                <Link 
-                  to="/services" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/services' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Services
-                </Link>
-                <Link 
-                  to="/about" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/about' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  About
-                </Link>
-                <Link 
-                  to="/contact" 
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === '/contact' 
-                      ? 'text-purple-400 bg-purple-500/10' 
-                      : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Contact
-                </Link>
-              </>
-            ) : (
-              <>
-                {userType === 'admin' ? (
-                  <>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/'); }}
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
-                    >
-                      Home
-                    </button>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/admin/dashboard'); }}
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
-                    >
-                      Dashboard
-                    </button>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/admin/students'); }}
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
-                    >
-                      Students
-                    </button>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/admin/messages'); }}
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
-                    >
-                      Messages
-                    </button>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/admin/profile'); }} 
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200 flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      Profile
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/'); }}
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
-                    >
-                      Home
-                    </button>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/student/dashboard'); }}
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
-                    >
-                      Dashboard
-                    </button>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/student/messages'); }}
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
-                    >
-                      Messages
-                    </button>
-                    <button 
-                      onClick={() => { closeMobileMenu(); navigate('/student/profile'); }} 
-                      className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200 flex items-center gap-2"
-                    >
-                      {studentProfile ? (
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden border border-purple-400/50">
-                            {studentProfile.profile_image ? (
-                              <img 
-                                src={studentProfile.profile_image} 
-                                alt="Profile" 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                                <span className="text-white text-sm font-bold">
-                                  {studentProfile.name?.charAt(0)?.toUpperCase() || 'S'}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">{studentProfile.name || 'Student'}</span>
-                            <span className="text-xs text-slate-400">ID: {studentProfile.student_id || 'N/A'}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          Profile
-                        </>
-                      )}
-                    </button>
-                  </>
-                )}
-              </>
+              </div>
             )}
-            <div className="pt-4 border-t border-slate-700/50 space-y-2">
+
+            {/* Auth Section */}
+            <div className="pt-4 border-t border-slate-700/50 space-y-2 mobile-menu-section">
               {isLoggedIn ? (
                 <>
                   <button 
@@ -784,7 +795,7 @@ export default function Header() {
                     } else {
                       setShowRoleModal(true);
                     }
-                  }} className="block w-full text-left px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-center shadow-lg shadow-purple-500/25 hover:shadow-purple-500/30 transition-all duration-200">
+                  }} className="block w-full text-left px-4 py-4 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-center shadow-lg shadow-purple-500/25 hover:shadow-purple-500/30 transition-all duration-200">
                     {selectedRole === 'admin' ? 'Register Your Library' : 'Get Started'}
                   </button>
                 </>

@@ -15,9 +15,9 @@ import {
 
 function Stat({ value, label }) {
   return (
-    <div className="text-center group" data-aos="fade-up">
-      <div className="text-4xl md:text-5xl font-black gradient-text group-hover:scale-110 transition-transform duration-300">{value}</div>
-      <div className="text-sm md:text-base text-slate-300 font-medium mt-1">{label}</div>
+    <div className="text-center group">
+      <div className="text-3xl sm:text-4xl md:text-5xl font-black gradient-text group-hover:scale-110 transition-transform duration-300">{value}</div>
+      <div className="text-xs sm:text-sm md:text-base text-slate-300 font-medium mt-1">{label}</div>
     </div>
   );
 }
@@ -28,7 +28,14 @@ export default function Home() {
   const navigate = useNavigate();
   
   useEffect(() => {
-    AOS.init({ duration: 700, once: true, offset: 80, easing: 'ease-out' });
+    AOS.init({ 
+      duration: 700, 
+      once: true, 
+      offset: 80, 
+      easing: 'ease-out',
+      disable: false,
+      startEvent: 'DOMContentLoaded'
+    });
   }, []);
 
   useEffect(() => {
@@ -83,52 +90,52 @@ export default function Home() {
       />
 
       {/* Hero */}
-      <section id="hero" className="relative isolate pt-16 md:pt-20 overflow-hidden min-h-[70vh] md:min-h-[78vh] flex items-start">
+      <section id="hero" className="relative isolate pt-16 md:pt-20 overflow-hidden min-h-screen flex items-start z-10">
         <div className="absolute inset-0 -z-10">
           <img src={new URL('../../assets/Front.png', import.meta.url).href} alt="Library Connekto" className="h-full w-full object-cover" />
           <div className="absolute inset-0 hero-overlay" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12 w-full relative z-20">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left side - Text content */}
-            <div className="max-w-2xl" data-aos="fade-up">
+            <div className="max-w-2xl relative z-30">
               <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25 animate-pulse-glow">
                 <RocketIcon className="w-4 h-4" />
                 <span>Transform Your Library Today</span>
               </span>
-              <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white mb-6">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight tracking-tight text-white mb-6">
                 <span className="block gradient-text">Smart Library</span>
                 <span className="block gradient-text">Management</span>
                 <span className="block gradient-text">Made Simple</span>
               </h1>
-              <p className="mt-6 text-xl md:text-2xl text-slate-300 font-medium leading-relaxed max-w-3xl" data-aos="fade-up" data-aos-delay="100">
+              <p className="mt-6 text-lg sm:text-xl md:text-2xl text-slate-300 font-medium leading-relaxed max-w-3xl">
                 Turn your library into a smart, profitable business with our all-in-one management platform.
               </p>
-              <div className="mt-10 flex flex-wrap items-center gap-4" data-aos="fade-up" data-aos-delay="150">
-                <button onClick={handleAuthAction} className="btn-hover inline-flex items-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-lg font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40">
+              <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <button onClick={handleAuthAction} className="btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40">
                   {selectedRole === 'admin' ? 'Register Your Library' : 'Get Started'}
-                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="ml-2 w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </button>
                 {!isLoggedIn && selectedRole ? (
                   selectedRole === 'admin' ? (
-                    <button onClick={handleAuthAction} className="btn-hover inline-flex items-center rounded-2xl glass px-8 py-4 text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
+                    <button onClick={handleAuthAction} className="btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
                       Sign In
                     </button>
                   ) : (
-                    <a href="#book-seat" className="btn-hover inline-flex items-center rounded-2xl glass px-8 py-4 text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
+                    <a href="#book-seat" className="btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
                       Book Your Seat
                     </a>
                   )
                 ) : (
-                  <a href="#book-seat" className="btn-hover inline-flex items-center rounded-2xl glass px-8 py-4 text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
+                  <a href="#book-seat" className="btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50">
                     Book Your Seat
                   </a>
                 )}
               </div>
-              <div className="mt-12 grid grid-cols-3 gap-8 max-w-2xl" data-aos="fade-up" data-aos-delay="200">
+              <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-2xl">
                 <Stat value="50K+" label="Active Students" />
                 <Stat value="500+" label="Partner Libraries" />
                 <Stat value="300%" label="Revenue Growth" />
@@ -136,10 +143,10 @@ export default function Home() {
             </div>
 
             {/* Right side - India Map with Connected Libraries */}
-            <div className="hidden lg:block" data-aos="fade-left" data-aos-delay="300">
+            <div className="hidden md:block relative z-30">
               <div className="relative">
-                <div className="rounded-3xl glass p-8 shadow-2xl shadow-purple-500/10 bg-slate-800/30 backdrop-blur-sm">
-                  <svg viewBox="0 0 600 500" className="w-full h-full">
+                <div className="rounded-3xl glass p-4 sm:p-6 lg:p-8 shadow-2xl shadow-purple-500/10 bg-slate-800/30 backdrop-blur-sm">
+                  <svg viewBox="0 0 600 500" className="w-full h-full max-h-96 lg:max-h-none">
                     <defs>
                       <linearGradient id="indiaGrad1" x1="0" x2="1" y1="0" y2="1">
                         <stop offset="0%" stopColor="#a855f7"/>
@@ -391,7 +398,7 @@ export default function Home() {
       </section>
 
       {/* Getting Started Section */}
-      <section className="bg-gradient-to-br from-slate-800 via-purple-900/20 to-slate-900 py-24">
+      <section className="relative bg-gradient-to-br from-slate-800 via-purple-900/20 to-slate-900 py-24 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative mb-20" data-aos="fade-up">
             {/* Background decorative elements */}
@@ -410,34 +417,34 @@ export default function Home() {
               
               {/* Main heading with enhanced styling */}
               <div className="mb-8">
-                <h2 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-4 leading-tight">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white mb-4 leading-tight">
                   <span className="block">Your Journey to</span>
                   <span className="block relative">
                     <span className="gradient-text">Digital Transformation</span>
-                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-16 sm:w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
                   </span>
                 </h2>
                 
                 {/* Subtitle with enhanced styling */}
                 <div className="max-w-4xl mx-auto">
-                  <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-6">
+                  <p className="text-lg sm:text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-6">
                     Transform your library in just 
                     <span className="text-purple-300 font-bold"> 4 simple steps</span>. 
                     Our streamlined onboarding process gets you up and running quickly.
                   </p>
                   
                   {/* Progress indicator */}
-                  <div className="flex items-center justify-center gap-4 mb-8">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-8">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                       <span className="text-sm text-green-400 font-medium">Quick Setup</span>
                     </div>
-                    <div className="w-8 h-0.5 bg-slate-600"></div>
+                    <div className="hidden sm:block w-8 h-0.5 bg-slate-600"></div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
                       <span className="text-sm text-blue-400 font-medium">Easy Migration</span>
                     </div>
-                    <div className="w-8 h-0.5 bg-slate-600"></div>
+                    <div className="hidden sm:block w-8 h-0.5 bg-slate-600"></div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
                       <span className="text-sm text-purple-400 font-medium">Go Live</span>
@@ -448,7 +455,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-4 mb-16" data-aos="fade-up" data-aos-delay="100">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16" data-aos="fade-up" data-aos-delay="100">
             {[
               { 
                 step: '01', 
@@ -494,7 +501,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3 mb-12" data-aos="fade-up" data-aos-delay="150">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-12" data-aos="fade-up" data-aos-delay="150">
             {[
               { title: 'Instant Setup', description: 'Get started in minutes, not days', icon: LightningIcon },
               { title: 'No Technical Skills Required', description: 'User-friendly interface for everyone', icon: TargetIcon },
@@ -513,10 +520,10 @@ export default function Home() {
             <p className="text-slate-300 mb-8 max-w-2xl mx-auto">
               Join hundreds of library owners who have already transformed their business. Start your free trial today and see the difference in just 30 minutes.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <button onClick={handleAuthAction} className="btn-hover inline-flex items-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-lg font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40">
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <button onClick={handleAuthAction} className="btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40">
                 {selectedRole === 'admin' ? 'Register Your Library' : 'Start Your Free Trial'}
-                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="ml-2 w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
@@ -525,19 +532,75 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Conditional Section - Book Your Seat or Ready to Get Started */}
+      {selectedRole !== 'admin' ? (
+        /* Book Your Seat Section - Show for student role or no role selected */
+        <section id="book-seat" className="relative bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-800 py-24 z-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16" data-aos="fade-up">
+              <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span>Book Your Seat</span>
+              </span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
+                Reserve Your Study Space
+                <span className="block gradient-text">No Account Required</span>
+              </h2>
+              <p className="text-lg sm:text-xl text-slate-300 font-medium max-w-3xl mx-auto">
+                Find and book your perfect study seat at one of our partner libraries. 
+                Quick, easy, and completely anonymous booking process.
+              </p>
+            </div>
+            
+            <div data-aos="fade-up" data-aos-delay="100">
+              <AnonymousBookingForm />
+            </div>
+          </div>
+        </section>
+      ) : (
+        /* Ready to Get Started Section - Show for admin role */
+        <section className="relative bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-800 py-24 z-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16" data-aos="fade-up">
+              <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
+                <RocketIcon className="w-4 h-4" />
+                <span>Ready to Get Started?</span>
+              </span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
+                Join hundreds of library owners who have already transformed their business. 
+                <span className="block gradient-text">Start your free trial today and see the difference in just 30 minutes.</span>
+              </h2>
+              <p className="text-lg sm:text-xl text-slate-300 font-medium max-w-3xl mx-auto mb-8">
+                Transform your library into a smart, profitable business with our all-in-one management platform.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button onClick={handleAuthAction} className="btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40">
+                  Register Your Library
+                  <svg className="ml-2 w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Powerful Features Section */}
-      <section className="bg-gradient-to-br from-slate-900 via-purple-900/10 to-slate-800 py-32">
+      <section className="relative bg-gradient-to-br from-slate-900 via-purple-900/10 to-slate-800 py-32 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20" data-aos="fade-up">
             <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <RocketIcon className="w-4 h-4" />
               <span>Powerful Features</span>
             </span>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
               Everything You Need to
               <span className="block gradient-text">Manage Your Library</span>
             </h2>
-            <p className="text-xl text-slate-300 font-medium max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-slate-300 font-medium max-w-3xl mx-auto">
               From student management to revenue analytics, our comprehensive platform provides all the tools you need to run a modern, efficient library business.
             </p>
           </div>
@@ -674,22 +737,22 @@ export default function Home() {
       </section>
 
       {/* Success Stories Section */}
-      <section className="bg-gradient-to-br from-slate-800 via-purple-900/20 to-slate-900 py-24">
+      <section className="relative bg-gradient-to-br from-slate-800 via-purple-900/20 to-slate-900 py-24 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16" data-aos="fade-up">
             <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <QuoteIcon className="w-4 h-4" />
               <span>Success Stories</span>
             </span>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
               What Our Customers Say
             </h2>
-            <p className="text-xl text-slate-300 font-medium max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-slate-300 font-medium max-w-3xl mx-auto">
               Don't just take our word for it. Here's what library owners across India are saying about their experience with Library Connekto.
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3 mb-16" data-aos="fade-up" data-aos-delay="100">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-16" data-aos="fade-up" data-aos-delay="100">
             {[
               { 
                 name: 'Rajesh Kumar', 
@@ -727,7 +790,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3" data-aos="fade-up" data-aos-delay="150">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-3" data-aos="fade-up" data-aos-delay="150">
             <Stat value="500+" label="Happy Customers" />
             <Stat value="4.9/5" label="Average Rating" />
             <Stat value="99.9%" label="Uptime Guarantee" />
@@ -753,19 +816,19 @@ export default function Home() {
             </div>
             
             {/* Main Heading */}
-            <h2 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-8 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white mb-8 leading-tight">
               <span className="block gradient-text">Ready to Revolutionize</span>
               <span className="block gradient-text">Your Library?</span>
             </h2>
             
             {/* Description */}
-            <p className="text-xl md:text-2xl text-slate-300 font-medium max-w-4xl mx-auto mb-12 leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-slate-300 font-medium max-w-4xl mx-auto mb-12 leading-relaxed">
               Join thousands of library owners who have transformed their business with our comprehensive management platform. 
               <span className="text-purple-300 font-semibold"> Start your journey today with our risk-free trial.</span>
             </p>
             
             {/* Features Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-16 max-w-6xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16 max-w-6xl mx-auto" data-aos="fade-up" data-aos-delay="100">
               {[
                 { 
                   icon: '✓', 
@@ -805,33 +868,33 @@ export default function Home() {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-6 mb-16" data-aos="fade-up" data-aos-delay="150">
-              <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-10 py-5 text-xl font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300">
-                <RocketIcon className="w-6 h-6 mr-3 group-hover:rotate-12 transition-transform duration-300" />
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-16" data-aos="fade-up" data-aos-delay="150">
+              <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 sm:px-8 lg:px-10 py-4 sm:py-5 text-lg sm:text-xl font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300">
+                <RocketIcon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 group-hover:rotate-12 transition-transform duration-300" />
                 {selectedRole === 'admin' ? 'Register Your Library' : 'Start Your Free Trial'}
-                <svg className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
               {!isLoggedIn && selectedRole ? (
                 selectedRole === 'admin' ? (
-                  <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl glass px-10 py-5 text-xl font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50 hover:bg-slate-800/40 transition-all duration-300">
-                    <svg className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 lg:px-10 py-4 sm:py-5 text-lg sm:text-xl font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50 hover:bg-slate-800/40 transition-all duration-300">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                     </svg>
                     Sign In
                   </button>
                 ) : (
-                  <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl glass px-10 py-5 text-xl font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50 hover:bg-slate-800/40 transition-all duration-300">
-                    <svg className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 lg:px-10 py-4 sm:py-5 text-lg sm:text-xl font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50 hover:bg-slate-800/40 transition-all duration-300">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                     </svg>
                     Book Your Seat
                   </a>
                 )
               ) : (
-                <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl glass px-10 py-5 text-xl font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50 hover:bg-slate-800/40 transition-all duration-300">
-                  <svg className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl glass px-6 sm:px-8 lg:px-10 py-4 sm:py-5 text-lg sm:text-xl font-bold text-white ring-2 ring-purple-400/30 hover:ring-purple-400/50 hover:bg-slate-800/40 transition-all duration-300">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                   </svg>
                   Book Your Seat
@@ -840,18 +903,18 @@ export default function Home() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-8 md:grid-cols-3 max-w-4xl mx-auto mb-12" data-aos="fade-up" data-aos-delay="200">
+            <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto mb-12" data-aos="fade-up" data-aos-delay="200">
               <div className="text-center group">
-                <div className="text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">500+</div>
-                <div className="text-lg text-slate-300 font-semibold">Libraries Transformed</div>
+                <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">500+</div>
+                <div className="text-base sm:text-lg text-slate-300 font-semibold">Libraries Transformed</div>
               </div>
               <div className="text-center group">
-                <div className="text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">40%</div>
-                <div className="text-lg text-slate-300 font-semibold">Average Revenue Increase</div>
+                <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">40%</div>
+                <div className="text-base sm:text-lg text-slate-300 font-semibold">Average Revenue Increase</div>
               </div>
               <div className="text-center group">
-                <div className="text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">4.9/5</div>
-                <div className="text-lg text-slate-300 font-semibold">Customer Satisfaction</div>
+                <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">4.9/5</div>
+                <div className="text-base sm:text-lg text-slate-300 font-semibold">Customer Satisfaction</div>
               </div>
             </div>
 
@@ -871,31 +934,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Book Your Seat Section */}
-      <section id="book-seat" className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-800 py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-aos="fade-up">
-            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span>Book Your Seat</span>
-            </span>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-6">
-              Reserve Your Study Space
-              <span className="block gradient-text">No Account Required</span>
-            </h2>
-            <p className="text-xl text-slate-300 font-medium max-w-3xl mx-auto">
-              Find and book your perfect study seat at one of our partner libraries. 
-              Quick, easy, and completely anonymous booking process.
-            </p>
-          </div>
-          
-          <div data-aos="fade-up" data-aos-delay="100">
-            <AnonymousBookingForm />
-          </div>
-        </div>
-      </section>
 
       <Footer />
     </div>

@@ -252,10 +252,10 @@ const AnonymousBookingForm = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-4">Book Your Seat</h2>
-        <p className="text-slate-300">
+    <div className="max-w-2xl mx-auto bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 sm:p-6 lg:p-8">
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">Book Your Seat</h2>
+        <p className="text-slate-300 text-sm sm:text-base px-2">
           Reserve your study seat at one of our partner libraries. No account required!
         </p>
         {locationPermission === 'prompt' && (
@@ -276,14 +276,14 @@ const AnonymousBookingForm = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Library Selection */}
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <label className="block text-sm font-medium text-slate-300">
               Select Library *
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {locationPermission === 'denied' && (
                 <button
                   type="button"
@@ -312,38 +312,45 @@ const AnonymousBookingForm = () => {
               </p>
             </div>
           ) : viewMode === 'dropdown' ? (
-            <select
-              value={selectedLibrary}
-              onChange={(e) => {
-                setSelectedLibrary(e.target.value);
-                if (e.target.value) {
-                  fetchSubscriptionPlans(e.target.value);
-                } else {
-                  setSubscriptionPlans([]);
-                  setFormData(prev => ({
-                    ...prev,
-                    subscription_months: 1,
-                    amount: 0
-                  }));
-                }
-              }}
-              className="w-full p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
-              required
-            >
-              <option value="">Choose a library...</option>
-              {libraries.map((library) => {
-                const availableSeats = library.total_seats - library.occupied_seats;
-                const distanceText = library.distance ? ` (${library.distance.toFixed(1)} km away)` : '';
-                return (
-                  <option key={library.id} value={library.id}>
-                    {library.library_name} - {library.address}
-                    {distanceText} - {availableSeats} seats available
-                  </option>
-                );
-              })}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedLibrary}
+                onChange={(e) => {
+                  setSelectedLibrary(e.target.value);
+                  if (e.target.value) {
+                    fetchSubscriptionPlans(e.target.value);
+                  } else {
+                    setSubscriptionPlans([]);
+                    setFormData(prev => ({
+                      ...prev,
+                      subscription_months: 1,
+                      amount: 0
+                    }));
+                  }
+                }}
+                className="w-full p-4 pr-10 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 appearance-none cursor-pointer"
+                required
+              >
+                <option value="">Choose a library...</option>
+                {libraries.map((library) => {
+                  const availableSeats = library.total_seats - library.occupied_seats;
+                  const distanceText = library.distance ? ` (${library.distance.toFixed(1)} km away)` : '';
+                  return (
+                    <option key={library.id} value={library.id}>
+                      {library.library_name} - {library.address}
+                      {distanceText} - {availableSeats} seats available
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           ) : (
-            <div className="space-y-3 max-h-64 overflow-y-auto">
+            <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
               {libraries.map((library) => {
                 const availableSeats = library.total_seats - library.occupied_seats;
                 const isSelected = selectedLibrary === library.id;
@@ -354,23 +361,26 @@ const AnonymousBookingForm = () => {
                       setSelectedLibrary(library.id);
                       fetchSubscriptionPlans(library.id);
                     }}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                    className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
                       isSelected
-                        ? 'border-purple-500 bg-purple-500/10'
-                        : 'border-slate-600/50 bg-slate-700/30 hover:border-slate-500/50 hover:bg-slate-700/50'
+                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
+                        : 'border-slate-600/50 bg-slate-700/30 hover:border-slate-500/50 hover:bg-slate-700/50 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white mb-1">{library.library_name}</h3>
-                        <p className="text-sm text-slate-300 mb-2">{library.address}</p>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="text-green-400">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-white mb-1 truncate">{library.library_name}</h3>
+                        <p className="text-sm text-slate-300 mb-2 line-clamp-2 break-words">{library.address}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs">
+                          <span className="text-green-400 flex items-center gap-1">
+                            <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                            </svg>
                             {availableSeats} seats available
                           </span>
                           {library.distance && (
                             <span className="text-blue-400 flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                               </svg>
                               {library.distance.toFixed(1)} km away
@@ -378,11 +388,11 @@ const AnonymousBookingForm = () => {
                           )}
                         </div>
                       </div>
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                         isSelected ? 'border-purple-500 bg-purple-500' : 'border-slate-400'
                       }`}>
                         {isSelected && (
-                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -412,7 +422,7 @@ const AnonymousBookingForm = () => {
         </div>
 
         {/* Personal Information */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Full Name *
@@ -422,7 +432,7 @@ const AnonymousBookingForm = () => {
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              className="w-full p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
+              className="w-full p-3 sm:p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-sm sm:text-base"
               placeholder="Enter your full name"
               required
             />
@@ -437,7 +447,7 @@ const AnonymousBookingForm = () => {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
+              className="w-full p-3 sm:p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-sm sm:text-base"
               placeholder="Enter your email"
               required
             />
@@ -446,7 +456,7 @@ const AnonymousBookingForm = () => {
 
         {/* Purpose removed for anonymous booking */}
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Mobile Number *
@@ -456,7 +466,7 @@ const AnonymousBookingForm = () => {
               name="mobile"
               value={formData.mobile}
               onChange={handleInputChange}
-              className="w-full p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
+              className="w-full p-3 sm:p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-sm sm:text-base"
               placeholder="Enter 10-digit mobile number"
               pattern="^[0-9]{10}$"
               maxLength={10}
@@ -483,7 +493,7 @@ const AnonymousBookingForm = () => {
                   amount: amount
                 }));
               }}
-              className="w-full p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
+              className="w-full p-3 sm:p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-sm sm:text-base"
               required
               disabled={!selectedLibrary || subscriptionPlans.length === 0}
             >
@@ -518,21 +528,21 @@ const AnonymousBookingForm = () => {
             value={formData.address}
             onChange={handleInputChange}
             rows={3}
-            className="w-full p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
+            className="w-full p-3 sm:p-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-sm sm:text-base resize-none"
             placeholder="Enter your complete address"
             required
           />
         </div>
 
         {/* Total Amount Display */}
-        <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+        <div className="p-3 sm:p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
           <div className="flex justify-between items-center">
-            <span className="text-slate-300 font-medium">Total Amount:</span>
-            <span className="text-2xl font-bold text-purple-400">
+            <span className="text-slate-300 font-medium text-sm sm:text-base">Total Amount:</span>
+            <span className="text-xl sm:text-2xl font-bold text-purple-400">
               ₹{formData.amount || 0}
             </span>
           </div>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-xs sm:text-sm text-slate-400 mt-2">
             You will pay Rs.1 token fee now to submit your booking request. Remaining payment will be collected after admin approval.
           </p>
           {subscriptionPlans.length > 0 && (
@@ -545,14 +555,14 @@ const AnonymousBookingForm = () => {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
         >
           {submitting ? 'Submitting...' : 'Submit Booking Request'}
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-slate-400">
+      <div className="mt-4 sm:mt-6 text-center">
+        <p className="text-xs sm:text-sm text-slate-400 px-2">
           By submitting this form, you agree to our terms and conditions. 
           The library admin will contact you to confirm your booking and collect payment.
         </p>
