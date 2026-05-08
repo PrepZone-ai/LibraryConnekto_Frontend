@@ -84,11 +84,13 @@ Create a `.env` file in project root and set the API base URL:
 ```bash
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 
-# For production (already configured in deployment):
-VITE_API_BASE_URL=https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
+# For AWS production deployment (api subdomain on EC2 + Nginx + Let's Encrypt):
+VITE_API_BASE_URL=https://api.libraryconnekto.me/api/v1
 ```
 
-The API client reads `VITE_API_BASE_URL` in `src/lib/api.js`. The production URL is already configured in all deployment files.
+The API client reads `VITE_API_BASE_URL` in `src/lib/api.js`.
+
+A ready-to-copy template lives at [`./.env.aws.example`](./.env.aws.example).
 
 ## Project Structure
 
@@ -183,8 +185,10 @@ Configure the base URL with `VITE_API_BASE_URL`.
 ### Files
 
 - `Dockerfile`: Multi-stage build (Node -> Nginx), SPA fallback, healthcheck
-- `nginx.conf`: Gzip + cache headers + SPA routing
+- `nginx.conf`: Gzip + cache headers + SPA routing (used by the local Docker image only)
 - `.dockerignore`: Speeds up Docker builds
+- `deploy/aws/02-build-and-deploy-frontend.ps1` / `.sh`: Build + S3 sync + CloudFront invalidation
+- `.github/workflows/deploy-frontend.yml`: GitHub Actions pipeline for AWS deployment
 
 ### Local Docker build and run
 
@@ -193,6 +197,38 @@ docker build -t library-connekto:local --build-arg VITE_API_BASE_URL=http://loca
 docker run -p 8080:8080 library-connekto:local
 # Visit http://localhost:8080
 ```
+
+## Deploy to AWS (S3 + CloudFront)
+
+End-to-end guide: [`../AWS_Deploy.md`](../AWS_Deploy.md). Once the backend
+provisioning script has created the bucket + CloudFront distribution, you can
+push a new frontend build with one command:
+
+```powershell
+# Windows
+cd LibraryConnekto_Frontend\deploy\aws
+.\02-build-and-deploy-frontend.ps1
+```
+
+```bash
+# Linux/Mac/CI
+BUCKET=libraryconnekto-frontend \
+CF_DIST_ID=EXXXXXXXXXXXXX \
+API_BASE_URL=https://api.libraryconnekto.me/api/v1 \
+./deploy/aws/02-build-and-deploy-frontend.sh
+```
+
+CI/CD: pushing to `main` triggers `.github/workflows/deploy-frontend.yml`. Add
+these repository secrets:
+
+| Secret | Description |
+| --- | --- |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | IAM user `libraryconnekto-deploy` with S3 + CloudFront access |
+| `AWS_REGION` | e.g. `ap-south-1` |
+| `S3_BUCKET` | Frontend bucket name (e.g. `libraryconnekto-frontend`) |
+| `CF_DIST_ID` | CloudFront distribution ID |
+| `VITE_API_BASE_URL` | `https://api.libraryconnekto.me/api/v1` |
+| `VITE_RAZORPAY_KEY_ID` | Razorpay public key id |
 
 ## License
 
