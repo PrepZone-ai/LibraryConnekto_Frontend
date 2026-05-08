@@ -1,11 +1,3 @@
-title: LibraryConnekto Backend
-colorFrom: gray
-colorTo: green
-sdk: docker
-pinned: false
-license: apache-2.0
-short_description: library backend
-
 # Library Connekto – Frontend (React + Vite)
 
 Modern, responsive frontend for Library Connekto — a platform that connects students with smart libraries and empowers admins with management, analytics, booking and messaging tools.
