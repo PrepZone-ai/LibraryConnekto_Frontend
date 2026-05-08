@@ -39,7 +39,7 @@ class PaymentService {
       const orderData = await this.createPaymentOrder(paymentData);
       
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID, // Your Razorpay key
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Public Razorpay key id
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Library Connekto',
@@ -124,7 +124,7 @@ class PaymentService {
         name: 'Test Payment',
         description: 'Simulated payment for testing',
         icon: '🧪',
-        enabled: process.env.NODE_ENV === 'development'
+        enabled: import.meta.env.DEV
       }
     ];
   }
