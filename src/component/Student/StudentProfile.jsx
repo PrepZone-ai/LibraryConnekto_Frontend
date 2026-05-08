@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
 const StudentProfile = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
@@ -15,6 +13,8 @@ const StudentProfile = () => {
   const [error, setError] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [qrToken, setQrToken] = useState('');
+  const [qrExpiry, setQrExpiry] = useState('');
   const fileInputRef = useRef(null);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -81,6 +81,11 @@ const StudentProfile = () => {
         });
       } else {
         setError('No profile data received from server');
+      }
+      const qrResponse = await apiClient.get('/student/qr-token');
+      if (qrResponse?.token) {
+        setQrToken(qrResponse.token);
+        setQrExpiry(qrResponse.expires_at || '');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -193,25 +198,34 @@ const StudentProfile = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const refreshQrCode = async () => {
+    try {
+      const qrResponse = await apiClient.post('/student/qr-rotate', {});
+      if (qrResponse?.token) {
+        setQrToken(qrResponse.token);
+        setQrExpiry(qrResponse.expires_at || '');
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to refresh QR');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white"></div>
             <p className="text-white/70 mt-4">Loading profile...</p>
           </div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   if (!profile && !loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="text-center max-w-md mx-auto px-4">
             <div className="mb-6">
@@ -255,15 +269,12 @@ const StudentProfile = () => {
             </div>
           </div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-      <Header />
-      
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -581,6 +592,24 @@ const StudentProfile = () => {
             </div>
           </div>
 
+          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Student QR Pass</h3>
+              <button
+                onClick={refreshQrCode}
+                className="text-xs bg-indigo-600/30 text-indigo-300 px-3 py-1 rounded-full hover:bg-indigo-600/40"
+              >
+                Refresh
+              </button>
+            </div>
+            <div className="bg-white rounded-xl p-4 w-fit mx-auto">
+              {qrToken ? <QRCodeSVG value={qrToken} size={180} /> : <p className="text-slate-700">QR unavailable</p>}
+            </div>
+            <p className="text-xs text-slate-400 mt-3 text-center">
+              Share this QR with admin scanner. Expires: {qrExpiry ? formatDate(qrExpiry) : 'N/A'}
+            </p>
+          </div>
+
           {/* Library Information Card */}
           <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
             <div className="flex items-center space-x-3 mb-4">
@@ -696,8 +725,7 @@ const StudentProfile = () => {
         </div>
       </div>
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

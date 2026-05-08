@@ -1,6 +1,7 @@
 import './App.css'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import AppLayout from './component/Layout/AppLayout'
 import Home from './component/Home/Home'
 import Services from './component/Services/Services'
 import About from './component/About/About'
@@ -8,6 +9,8 @@ import Contact from './component/Contact/Contact'
 import AdminAuth from './component/Auth/AdminAuth'
 import StudentLogin from './component/Auth/StudentLogin'
 import StudentSetPassword from './component/Auth/StudentSetPassword'
+import StudentForgotPassword from './component/Auth/StudentForgotPassword'
+import AdminResetPassword from './component/Auth/AdminResetPassword'
 import EmailVerificationSuccess from './component/Auth/EmailVerificationSuccess'
 import EmailVerificationError from './component/Auth/EmailVerificationError'
 
@@ -25,6 +28,7 @@ import RevenueDetails from './component/Admin/RevenueDetails'
 import StudentAttendanceDetails from './component/Admin/StudentAttendanceDetails'
 import StudentRemovalRequests from './component/Admin/StudentRemovalRequests'
 import AdminReferral from './component/Admin/AdminReferral'
+import AdminQRScanner from './component/Admin/AdminQRScanner'
 
 // Student Components
 import StudentDashboard from './component/Student/StudentDashboard'
@@ -39,56 +43,64 @@ import StudentProfile from './component/Student/StudentProfile'
 // Payment Components
 import PaymentConfirmation from './component/Payment/PaymentConfirmation'
 import PaymentSuccess from './component/Payment/PaymentSuccess'
+import TransferPayment from './component/Payment/TransferPayment'
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
+          {/* Layout Route - Contains Header and Footer */}
+          <Route element={<AppLayout />}>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
 
-          {/* Authentication Routes */}
-          <Route path="/admin/auth" element={<AdminAuth />} />
-          <Route path="/student/login" element={<StudentLogin />} />
-          <Route path="/student/set-password" element={<StudentSetPassword />} />
-          
-          {/* Email Verification Routes */}
-          <Route path="/auth/verify-success" element={<EmailVerificationSuccess />} />
-          <Route path="/auth/verify-error" element={<EmailVerificationError />} />
+            {/* Authentication Routes */}
+            <Route path="/admin/auth" element={<AdminAuth />} />
+            <Route path="/admin/reset-password" element={<AdminResetPassword />} />
+            <Route path="/student/login" element={<StudentLogin />} />
+            <Route path="/student/forgot-password" element={<StudentForgotPassword />} />
+            <Route path="/student/set-password" element={<StudentSetPassword />} />
+            
+            {/* Email Verification Routes */}
+            <Route path="/auth/verify-success" element={<EmailVerificationSuccess />} />
+            <Route path="/auth/verify-error" element={<EmailVerificationError />} />
 
-          {/* Payment Routes */}
-          <Route path="/payment/:bookingId" element={<PaymentConfirmation />} />
-          <Route path="/payment/success" element={<PaymentSuccess />} />
+            {/* Payment Routes */}
+            <Route path="/payment/:bookingId" element={<PaymentConfirmation />} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/transfer/payment" element={<TransferPayment />} />
 
-          {/* Admin Protected Routes */}
-          <Route path="/admin/details" element={<AdminDetailsForm />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/profile" element={<AdminProfile />} />
-          <Route path="/admin/students" element={<StudentManagement />} />
-          <Route path="/admin/messages" element={<AdminMessages />} />
-          <Route path="/admin/seats" element={<SeatManagement />} />
-          <Route path="/admin/seat-management" element={<SeatManagement />} />
-          <Route path="/admin/analytics" element={<AdminAnalytics />} />
-          <Route path="/admin/booking-management" element={<AdminBookingManagement />} />
-          <Route path="/admin/attendance-details" element={<AttendanceDetails />} />
-          <Route path="/admin/revenue-details" element={<RevenueDetails />} />
-          <Route path="/admin/student-attendance/:studentId" element={<StudentAttendanceDetails />} />
-          <Route path="/admin/student-removal-requests" element={<StudentRemovalRequests />} />
-          <Route path="/admin/referral" element={<AdminReferral />} />
+            {/* Admin Protected Routes */}
+            <Route path="/admin/details" element={<AdminDetailsForm />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
+            <Route path="/admin/students" element={<StudentManagement />} />
+            <Route path="/admin/messages" element={<AdminMessages />} />
+            <Route path="/admin/seats" element={<SeatManagement />} />
+            <Route path="/admin/seat-management" element={<SeatManagement />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            <Route path="/admin/booking-management" element={<AdminBookingManagement />} />
+            <Route path="/admin/attendance-details" element={<AttendanceDetails />} />
+            <Route path="/admin/revenue-details" element={<RevenueDetails />} />
+            <Route path="/admin/student-attendance/:studentId" element={<StudentAttendanceDetails />} />
+            <Route path="/admin/student-removal-requests" element={<StudentRemovalRequests />} />
+            <Route path="/admin/referral" element={<AdminReferral />} />
+            <Route path="/admin/scanner" element={<AdminQRScanner />} />
 
-          {/* Student Protected Routes */}
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/student/book-seat" element={<BookSeat />} />
-          <Route path="/student/messages" element={<StudentMessages />} />
-          <Route path="/student/tasks" element={<StudentTasks />} />
-          <Route path="/student/exams" element={<StudentExams />} />
-          <Route path="/student/attendance" element={<StudentAttendance />} />
-          <Route path="/student/attendance-history" element={<AttendanceHistory />} />
-          <Route path="/student/profile" element={<StudentProfile />} />
+            {/* Student Protected Routes */}
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/book-seat" element={<BookSeat />} />
+            <Route path="/student/messages" element={<StudentMessages />} />
+            <Route path="/student/tasks" element={<StudentTasks />} />
+            <Route path="/student/exams" element={<StudentExams />} />
+            <Route path="/student/attendance" element={<StudentAttendance />} />
+            <Route path="/student/attendance-history" element={<AttendanceHistory />} />
+            <Route path="/student/profile" element={<StudentProfile />} />
+          </Route>
         </Routes>
       </Router>
     </AuthProvider>

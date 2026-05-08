@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import SelectRoleModal from '../Auth/SelectRoleModal';
+import { useStudentProfile, queryKeys } from '../../lib/queries';
 
 export default function Header() {
   const { user, userType, isLoggedIn, logout, selectedRole, setRole } = useAuth();
+  const queryClient = useQueryClient();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [studentProfile, setStudentProfile] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -45,6 +47,10 @@ export default function Header() {
     }
   }, []);
 
+  const { data: studentProfile } = useStudentProfile({
+    enabled: userType === 'student' && isLoggedIn,
+  });
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -53,22 +59,21 @@ export default function Header() {
     setIsMobileMenuOpen(false);
   };
 
-  const fetchStudentProfile = async () => {
-    if (userType === 'student' && isLoggedIn) {
-      try {
-        const response = await apiClient.get('/student/profile');
-        setStudentProfile(response);
-      } catch (error) {
-        console.error('Error fetching student profile:', error);
-      }
-    }
-  };
+  const prefetchStudentDashboardData = () => {
+    if (userType !== 'student' || !isLoggedIn) return;
 
-  useEffect(() => {
-    if (userType === 'student' && isLoggedIn) {
-      fetchStudentProfile();
-    }
-  }, [userType, isLoggedIn]);
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.studentProfile,
+      queryFn: () => apiClient.get('/student/profile'),
+      staleTime: 2 * 60 * 1000,
+    });
+
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.studentDashboardStats,
+      queryFn: () => apiClient.get('/student/dashboard/stats'),
+      staleTime: 60 * 1000,
+    });
+  };
 
   const handleSelectRole = (role) => {
     setShowRoleModal(false);
@@ -226,24 +231,22 @@ export default function Header() {
                     location.pathname === '/contact' ? 'w-8' : 'w-0 group-hover:w-8'
                   }`}></span>
                 </Link>
-                <button 
-                  onClick={() => {
-                    if (selectedRole === 'admin') {
-                      setShowRoleModal(true);
-                    } else {
+                {selectedRole !== 'admin' && (
+                  <button 
+                    onClick={() => {
                       const element = document.getElementById('book-seat');
                       if (element) {
                         element.scrollIntoView({ behavior: 'smooth' });
                       }
-                    }
-                  }}
-                  className="inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-105 transition-all duration-200"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  {selectedRole === 'admin' ? 'Register Your Library' : 'Book Your Seat'}
-                </button>
+                    }}
+                    className="inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-105 transition-all duration-200"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Book Your Seat
+                  </button>
+                )}
               </>
             ) : !isLoggedIn ? (
               <>
@@ -347,6 +350,16 @@ export default function Header() {
                       }`}
                     >
                       Messages
+                    </button>
+                    <button
+                      onClick={() => navigate('/admin/scanner')}
+                      className={`transition-all duration-200 px-3 py-2 rounded-lg ${
+                        location.pathname === '/admin/scanner'
+                          ? 'text-purple-400 bg-purple-500/10'
+                          : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                      }`}
+                    >
+                      Scanner
                     </button>
                   </>
                 ) : (
@@ -655,6 +668,12 @@ export default function Header() {
                       >
                         Messages
                       </button>
+                      <button
+                        onClick={() => { closeMobileMenu(); navigate('/admin/scanner'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Scanner
+                      </button>
                       <button 
                         onClick={() => { closeMobileMenu(); navigate('/admin/profile'); }} 
                         className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200 flex items-center gap-2"
@@ -727,18 +746,14 @@ export default function Header() {
             </div>
 
             {/* CTA Button Section */}
-            {isHome && (
+            {isHome && selectedRole !== 'admin' && (
               <div className="pt-4 border-t border-slate-700/50 mobile-menu-section">
                 <button 
                   onClick={() => { 
                     closeMobileMenu(); 
-                    if (selectedRole === 'admin') {
-                      setShowRoleModal(true);
-                    } else {
-                      const element = document.getElementById('book-seat');
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth' });
-                      }
+                    const element = document.getElementById('book-seat');
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}
                   className="block w-full text-left px-4 py-4 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold text-center shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/30 transition-all duration-200 mb-4"
@@ -747,7 +762,7 @@ export default function Header() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    {selectedRole === 'admin' ? 'Register Your Library' : 'Book Your Seat'}
+                    Book Your Seat
                   </div>
                 </button>
               </div>

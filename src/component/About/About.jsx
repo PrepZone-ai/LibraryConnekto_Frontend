@@ -1,13 +1,13 @@
-import { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
+import { useEffect } from 'react';
 import DownloadAppButton from '../common/DownloadAppButton';
-import { 
-  RocketIcon, UsersIcon, TargetIcon, ShieldIcon, 
-  ClockIcon, LightningIcon, StarIcon, QuoteIcon,
-  ChartIcon
+import {
+  ClockIcon,
+  RocketIcon,
+  StarIcon,
+  TargetIcon,
+  UsersIcon
 } from '../Icons/Icons';
 
 // Additional icons for About page
@@ -27,12 +27,6 @@ const VisionIcon = ({ className = "w-6 h-6" }) => (
 const ValuesIcon = ({ className = "w-6 h-6" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-  </svg>
-);
-
-const CalendarIcon = ({ className = "w-6 h-6" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 
@@ -96,42 +90,6 @@ function ValueCard({ icon: Icon, title, description, features, delay = 0 }) {
   );
 }
 
-function TimelineItem({ year, title, description, delay = 0 }) {
-  return (
-    <div 
-      className="relative pl-8 pb-8 border-l-2 border-purple-500/30 last:border-l-0"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
-      <div className="absolute -left-2 top-0 w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-slate-900"></div>
-      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 hover:border-purple-500/50 transition-all duration-300">
-        <div className="text-purple-400 font-bold text-lg mb-2">{year}</div>
-        <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
-        <p className="text-slate-300 leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function TeamCard({ name, role, email, description, expertise, delay = 0 }) {
-  return (
-    <div 
-      className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group text-center"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
-      <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mx-auto mb-6 flex items-center justify-center text-white font-bold text-2xl group-hover:scale-110 transition-transform duration-300">
-        {name.split(' ').map(n => n[0]).join('')}
-      </div>
-      <h3 className="text-xl font-bold text-white mb-2">{name}</h3>
-      <div className="text-purple-400 font-semibold mb-2">{role}</div>
-      <div className="text-slate-400 text-sm mb-4">{email}</div>
-      <p className="text-slate-300 mb-4 leading-relaxed">{description}</p>
-      <div className="text-sm text-slate-400 font-medium">{expertise}</div>
-    </div>
-  );
-}
-
 export default function About() {
   useEffect(() => {
     AOS.init({ duration: 700, once: true, offset: 80, easing: 'ease-out' });
@@ -177,60 +135,8 @@ export default function About() {
     }
   ];
 
-  const timeline = [
-    {
-      year: "2025",
-      title: "Company Founded",
-      description: "Started with a vision to digitize library management in India"
-    },
-    {
-      year: "2025",
-      title: "First 50 Libraries",
-      description: "Onboarded our first 50 partner libraries across Mumbai and Delhi"
-    },
-    {
-      year: "2026",
-      title: "AI Integration",
-      description: "Launched AI-powered analytics and smart attendance systems"
-    },
-    {
-      year: "2026",
-      title: "National Expansion",
-      description: "Expanded to 500+ libraries across 15 states in India"
-    },
-    {
-      year: "2027",
-      title: "50K+ Students",
-      description: "Reached milestone of 50,000+ active students on our platform"
-    }
-  ];
-
-  const team = [
-  {
-    name: "Sandeep Kumar",
-    role: "Entrepreneur & Innovator",
-    email: "sandeep@libraryconnekto.me",
-    description: "Driven entrepreneur with a passion for creating impactful solutions in technology and education sectors"
-  },
-  {
-    name: "Mayank Singh Tomar",
-    role: "CTO & Tech Innovator",
-    email: "mayank@libraryconnekto.me",
-    description: "Passionate about AI and full-stack development, focused on building innovative technology solutions"
-  },
-  {
-    name: "Anshul Kumar",
-    role: "Head of Operations",
-    email: "anshul@libraryconnekto.me",
-    description: "Passionate about designing scalable processes and leading operational excellence"
-  }
-
-  ];
-
   return (
     <div className="min-h-screen flex flex-col font-body">
-      <Header />
-
       {/* Hero Section */}
       <section className="relative isolate pt-16 md:pt-20 overflow-hidden min-h-[60vh] flex items-center">
         <div className="absolute inset-0 -z-10">
@@ -312,60 +218,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Journey Timeline */}
-      <section className="relative py-20 bg-slate-900/50 z-10">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
-              <span className="gradient-text">Our Journey</span>
-            </h2>
-            <p className="text-xl text-slate-300" data-aos="fade-up" data-aos-delay="100">
-              From a simple idea to transforming libraries across India
-            </p>
-          </div>
-          
-          <div className="relative">
-            {timeline.map((item, index) => (
-              <TimelineItem
-                key={index}
-                year={item.year}
-                title={item.title}
-                description={item.description}
-                delay={index * 100}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="relative py-20 z-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
-              <span className="gradient-text">Meet Our Team</span>
-            </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-              The passionate minds behind Library Connekto, dedicated to transforming education
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <TeamCard
-                key={index}
-                name={member.name}
-                role={member.role}
-                email={member.email}
-                description={member.description}
-                expertise={member.expertise}
-                delay={index * 100}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="relative py-20 bg-gradient-to-r from-purple-900/50 to-pink-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
@@ -385,8 +237,6 @@ export default function About() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

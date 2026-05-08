@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import PaymentService from '../../services/paymentService';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
 const BookSeat = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
@@ -235,19 +232,15 @@ const BookSeat = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100">
-      <Header />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/20">
@@ -500,8 +493,7 @@ const BookSeat = () => {
         </div>
       </div>
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

@@ -1,105 +1,46 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
+import {
+  useStudentProfile,
+  useStudentDashboardStats,
+  useStudentMessages,
+  useStudentTasks,
+  useInvalidateStudentQueries,
+} from '../../lib/queries';
 import SubscriptionExpiryModal from './SubscriptionExpiryModal';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const { user, userType, logout } = useAuth();
-  const [stats, setStats] = useState({
-    attendanceToday: false,
-    totalStudyHours: 0,
-    tasksCompleted: 0,
-    totalTasks: 0,
-    upcomingExams: 0,
-    messagesUnread: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [attendanceMarked, setAttendanceMarked] = useState(false);
-  const [studentProfile, setStudentProfile] = useState(null);
-  const [recentMessages, setRecentMessages] = useState([]);
-  const [todaysTasks, setTodaysTasks] = useState([]);
-  const [adminMessages, setAdminMessages] = useState([]);
+  const { user, userType } = useAuth();
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const locationWatchIdRef = useRef(null);
+  const heartbeatIntervalRef = useRef(null);
+  const trackingRef = useRef({ lastSentAt: 0, lastLat: null, lastLon: null });
+  const minSendIntervalMs = 5 * 60 * 1000;
+  const minMoveDistanceMeters = 40;
+  const heartbeatIntervalMs = 10 * 60 * 1000;
 
+  // Use React Query hooks for data fetching
+  const { data: studentProfile, isLoading: profileLoading } = useStudentProfile();
+  const { data: statsResponse, isLoading: statsLoading } = useStudentDashboardStats();
+  const { data: messagesResponse, isLoading: messagesLoading } = useStudentMessages(3);
+  const { data: tasksResponse, isLoading: tasksLoading } = useStudentTasks();
+  const invalidateQueries = useInvalidateStudentQueries();
+
+  // Check authentication
   useEffect(() => {
     if (userType !== 'student') {
       navigate('/student/login');
-      return;
     }
-    fetchDashboardData();
   }, [userType, navigate]);
 
-  const fetchDashboardData = async () => {
-    try {
-      // Fetch all dashboard data in parallel
-      const [profileResponse, statsResponse, messagesResponse, tasksResponse] = await Promise.all([
-        apiClient.get('/student/profile'),
-        apiClient.get('/student/dashboard/stats'),
-        apiClient.get('/student/dashboard/messages?limit=3'),
-        apiClient.get('/student/tasks')
-      ]);
-      
-      // Set profile data
-      if (profileResponse) {
-        setStudentProfile(profileResponse);
-        console.log('Student profile:', profileResponse);
-      }
-      
-      // Set dashboard stats
-      if (statsResponse) {
-        setStats({
-          attendanceToday: statsResponse.attendance_today,
-          totalStudyHours: statsResponse.total_study_hours,
-          tasksCompleted: statsResponse.tasks_completed,
-          totalTasks: statsResponse.total_tasks,
-          upcomingExams: statsResponse.upcoming_exams,
-          messagesUnread: statsResponse.messages_unread,
-          studyStreak: statsResponse.study_streak,
-          subscriptionStatus: statsResponse.subscription_status,
-          subscriptionEnd: statsResponse.subscription_end
-        });
-      }
-      
-      // Set recent messages
-      if (messagesResponse) {
-        setRecentMessages(messagesResponse);
-        console.log('Recent messages:', messagesResponse);
-      }
-
-      // Process tasks for today's schedule
-      if (tasksResponse) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        // Filter tasks for today
-        const todaysTasksData = tasksResponse.filter(task => {
-          if (!task.due_date) return false;
-          const taskDate = new Date(task.due_date);
-          return taskDate >= today && taskDate < tomorrow;
-        });
-
-        setTodaysTasks(todaysTasksData);
-        console.log('Today\'s tasks:', todaysTasksData);
-      }
-
-      // Filter admin messages (messages sent by admin, not by student)
-      if (messagesResponse) {
-        const adminMessagesData = messagesResponse.filter(message => 
-          message.sender_type === 'admin'
-        );
-        setAdminMessages(adminMessagesData);
-        console.log('Admin messages:', adminMessagesData);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      // Set default stats on error
-      setStats({
+  // Process stats data
+  const stats = useMemo(() => {
+    if (!statsResponse) {
+      return {
         attendanceToday: false,
         totalStudyHours: 0,
         tasksCompleted: 0,
@@ -108,19 +49,63 @@ const StudentDashboard = () => {
         messagesUnread: 0,
         studyStreak: 0,
         subscriptionStatus: 'Unknown',
-        subscriptionEnd: null
-      });
-      setRecentMessages([]);
-      setTodaysTasks([]);
-      setAdminMessages([]);
-    } finally {
-      setLoading(false);
+        subscriptionEnd: null,
+      };
     }
-  };
+    return {
+      attendanceToday: statsResponse.attendance_today || false,
+      totalStudyHours: statsResponse.total_study_hours || 0,
+      tasksCompleted: statsResponse.tasks_completed || 0,
+      totalTasks: statsResponse.total_tasks || 0,
+      upcomingExams: statsResponse.upcoming_exams || 0,
+      messagesUnread: statsResponse.messages_unread || 0,
+      studyStreak: statsResponse.study_streak || 0,
+      subscriptionStatus: statsResponse.subscription_status || 'Unknown',
+      subscriptionEnd: statsResponse.subscription_end || null,
+    };
+  }, [statsResponse]);
+
+  // Process tasks for today
+  const todaysTasks = useMemo(() => {
+    if (!tasksResponse || !Array.isArray(tasksResponse)) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return tasksResponse.filter(task => {
+      if (!task.due_date) return false;
+      const taskDate = new Date(task.due_date);
+      return taskDate >= today && taskDate < tomorrow;
+    });
+  }, [tasksResponse]);
+
+  // Filter admin messages
+  const adminMessages = useMemo(() => {
+    if (!messagesResponse || !Array.isArray(messagesResponse)) return [];
+    return messagesResponse.filter(message => message.sender_type === 'admin');
+  }, [messagesResponse]);
+
+  const subscriptionDaysLeft = useMemo(() => {
+    const subscriptionEndDate = stats.subscriptionEnd || studentProfile?.subscription_end;
+    if (!subscriptionEndDate) return null;
+
+    const today = new Date();
+    const expiryDate = new Date(subscriptionEndDate);
+    return Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+  }, [stats.subscriptionEnd, studentProfile?.subscription_end]);
+
+  const shouldShowRenewAlert =
+    stats.subscriptionStatus !== 'Expired' &&
+    subscriptionDaysLeft !== null &&
+    subscriptionDaysLeft <= 5 &&
+    subscriptionDaysLeft > 0;
+
+  const [visibleAdminMessages, setVisibleAdminMessages] = useState(5);
 
   // Check subscription status and show modal if needed
   useEffect(() => {
-    if (stats.subscription_end && !loading) {
+    if (stats.subscription_end && !statsLoading) {
       const today = new Date();
       const expiryDate = new Date(stats.subscription_end);
       const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
@@ -130,66 +115,168 @@ const StudentDashboard = () => {
         setShowSubscriptionModal(true);
       }
     }
-  }, [stats, loading]);
+  }, [stats, statsLoading]);
+
+  // Mutation for marking attendance
+  const markAttendanceMutation = useMutation({
+    mutationFn: async (attendanceData) => {
+      return apiClient.post('/student/attendance/checkin', attendanceData);
+    },
+    onSuccess: () => {
+      invalidateQueries.invalidateStats();
+      invalidateQueries.invalidateAttendance();
+    },
+  });
+
+  // Mutation for checkout
+  const checkoutAttendanceMutation = useMutation({
+    mutationFn: async () => {
+      return apiClient.post('/student/attendance/checkout');
+    },
+    onSuccess: () => {
+      invalidateQueries.invalidateStats();
+      invalidateQueries.invalidateAttendance();
+      alert('Successfully checked out! Your study session has been recorded.');
+    },
+  });
 
   const markAttendance = async () => {
-    try {
-      // Get user's current location
-      if (!navigator.geolocation) {
-        alert('Geolocation is not supported by this browser. Please enable location services.');
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const attendanceData = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            };
-            
-            await apiClient.post('/student/attendance/checkin', attendanceData);
-            setAttendanceMarked(true);
-            setStats(prev => ({ ...prev, attendanceToday: true }));
-            
-            // Refresh dashboard data to get updated stats
-            fetchDashboardData();
-          } catch (error) {
-            console.error('Error marking attendance:', error);
-            alert(`Failed to mark attendance: ${error.message}`);
-          }
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          alert('Failed to get your location. Please enable location services and try again.');
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    } catch (error) {
-      console.error('Error marking attendance:', error);
-      alert('Failed to mark attendance. Please try again.');
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by this browser. Please enable location services.');
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const attendanceData = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          await markAttendanceMutation.mutateAsync(attendanceData);
+        } catch (error) {
+          console.error('Error marking attendance:', error);
+          alert(`Failed to mark attendance: ${error.message}`);
+        }
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        alert('Failed to get your location. Please enable location services and try again.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   const checkoutAttendance = async () => {
     try {
-      await apiClient.post('/student/attendance/checkout');
-      setAttendanceMarked(false);
-      setStats(prev => ({ ...prev, attendanceToday: false }));
-      
-      // Refresh dashboard data to get updated stats
-      fetchDashboardData();
-      
-      alert('Successfully checked out! Your study session has been recorded.');
+      stopLocationTracking();
+      await checkoutAttendanceMutation.mutateAsync();
     } catch (error) {
       console.error('Error checking out:', error);
       alert(`Failed to checkout: ${error.message}`);
     }
   };
+
+  const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const rLat1 = toRad(lat1);
+    const rLon1 = toRad(lon1);
+    const rLat2 = toRad(lat2);
+    const rLon2 = toRad(lon2);
+    const dLat = rLat2 - rLat1;
+    const dLon = rLon2 - rLon1;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.asin(Math.sqrt(a));
+    return 6371 * c * 1000;
+  };
+
+  const stopLocationTracking = () => {
+    if (locationWatchIdRef.current !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(locationWatchIdRef.current);
+      locationWatchIdRef.current = null;
+    }
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
+  const sendLocationPing = async (latitude, longitude, force = false) => {
+    const now = Date.now();
+    const { lastSentAt, lastLat, lastLon } = trackingRef.current;
+    const elapsed = now - lastSentAt;
+    let movedEnough = true;
+
+    if (lastLat !== null && lastLon !== null) {
+      movedEnough = calculateDistanceMeters(lastLat, lastLon, latitude, longitude) >= minMoveDistanceMeters;
+    }
+
+    if (!force && elapsed < minSendIntervalMs && !movedEnough) {
+      return;
+    }
+
+    try {
+      const res = await apiClient.post('/student/attendance/check-location', { latitude, longitude });
+      trackingRef.current = { lastSentAt: now, lastLat: latitude, lastLon: longitude };
+      if (res?.auto_checkout) {
+        stopLocationTracking();
+        invalidateQueries.invalidateStats();
+        invalidateQueries.invalidateAttendance();
+        alert('Auto check-out triggered because you moved outside library range.');
+      }
+    } catch (error) {
+      console.error('Location ping failed:', error);
+    }
+  };
+
+  const getAndSendCurrentLocation = (force = false) => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        await sendLocationPing(position.coords.latitude, position.coords.longitude, force);
+      },
+      (error) => {
+        console.error('Failed to get heartbeat location:', error);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    if (!stats.attendanceToday || !navigator.geolocation) {
+      stopLocationTracking();
+      return;
+    }
+
+    // Prime one ping after successful check-in/session restore.
+    getAndSendCurrentLocation(true);
+
+    locationWatchIdRef.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        await sendLocationPing(position.coords.latitude, position.coords.longitude, false);
+      },
+      (error) => {
+        console.error('watchPosition failed:', error);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+
+    // Hard fallback heartbeat every 10 minutes.
+    heartbeatIntervalRef.current = setInterval(() => {
+      getAndSendCurrentLocation(true);
+    }, heartbeatIntervalMs);
+
+    return () => {
+      stopLocationTracking();
+    };
+  }, [stats.attendanceToday]);
+
+  // Determine if any data is loading (for initial load)
+  const isLoading = profileLoading || statsLoading || messagesLoading || tasksLoading;
 
   const StatCard = ({ title, value, icon, color = 'indigo', onClick }) => {
     const colorClasses = {
@@ -253,44 +340,60 @@ const StudentDashboard = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-        <Header />
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  // Loading skeleton component for localized loading states
+  const LoadingSkeleton = ({ className = '' }) => (
+    <div className={`animate-pulse bg-slate-700/50 rounded-xl ${className}`}></div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-      <Header />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {shouldShowRenewAlert && (
+          <div className="mb-6 bg-gradient-to-r from-red-900/80 to-orange-900/80 border border-red-700/50 rounded-2xl p-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-red-100 font-semibold">
+                ⚠️ Renew your subscription. Only {subscriptionDaysLeft} day{subscriptionDaysLeft !== 1 ? 's' : ''} left.
+              </p>
+              <button
+                onClick={() => navigate('/student/subscription')}
+                className="w-fit bg-red-500/20 text-red-200 hover:bg-red-500/30 px-4 py-2 rounded-lg border border-red-500/40 transition-colors text-sm font-medium"
+              >
+                Renew Now
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column - 3/4 width */}
           <div className="lg:col-span-3">
             {/* Welcome Section */}
             <div className="mt-8 mb-6">
-              <h1 className="text-2xl font-bold text-white mb-1">
-                Welcome back, {studentProfile?.name || user?.name || 'Student'}! 🎓
-              </h1>
-              <p className="text-slate-300 text-sm">
-                {studentProfile?.library_name ? `Study at ${studentProfile.library_name}` : 'Track your progress and manage your study schedule with ease.'}
-              </p>
-              {studentProfile?.student_id && (
-                <p className="text-slate-400 text-xs mt-1">
-                  Student ID: {studentProfile.student_id}
-                </p>
+              {profileLoading ? (
+                <>
+                  <LoadingSkeleton className="h-8 w-64 mb-2" />
+                  <LoadingSkeleton className="h-4 w-96 mb-1" />
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold text-white mb-1">
+                    Welcome back, {studentProfile?.name || user?.name || 'Student'}! 🎓
+                  </h1>
+                  <p className="text-slate-300 text-sm">
+                    {studentProfile?.library_name ? `Study at ${studentProfile.library_name}` : 'Track your progress and manage your study schedule with ease.'}
+                  </p>
+                  {studentProfile?.student_id && (
+                    <p className="text-slate-400 text-xs mt-1">
+                      Student ID: {studentProfile.student_id}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
             {/* Attendance Section */}
-            {!stats.attendanceToday && !attendanceMarked && (
+            {!statsLoading && !stats.attendanceToday && (
               <div className="mb-8 bg-gradient-to-r from-amber-900/80 to-orange-900/80 border border-amber-700/50 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
@@ -302,9 +405,10 @@ const StudentDashboard = () => {
                   </div>
                   <button
                     onClick={markAttendance}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold"
+                    disabled={markAttendanceMutation.isPending}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Check In
+                    {markAttendanceMutation.isPending ? 'Checking In...' : 'Check In'}
                   </button>
                 </div>
                 
@@ -378,12 +482,13 @@ const StudentDashboard = () => {
                   </div>
                   <button
                     onClick={checkoutAttendance}
-                    className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold flex items-center gap-2"
+                    disabled={checkoutAttendanceMutation.isPending}
+                    className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Check Out
+                    {checkoutAttendanceMutation.isPending ? 'Checking Out...' : 'Check Out'}
                   </button>
                 </div>
                 
@@ -446,43 +551,50 @@ const StudentDashboard = () => {
             {/* Stats Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Study Hours - Circular Progress */}
-              <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
-                <h3 className="text-lg font-bold text-white mb-3">Study Hours Today</h3>
-                <div className="flex items-center justify-center">
-                  <div className="relative w-24 h-24">
-                    <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        className="text-slate-600"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-sky-500"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        fill="none"
-                        strokeDasharray={`${(stats.totalStudyHours / 8) * 100}, 100`}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-white">{stats.totalStudyHours}h</div>
-                        <div className="text-xs text-slate-400">of 8h goal</div>
+              {statsLoading ? (
+                <LoadingSkeleton className="h-48" />
+              ) : (
+                <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
+                  <h3 className="text-lg font-bold text-white mb-3">Study Hours Today</h3>
+                  <div className="flex items-center justify-center">
+                    <div className="relative w-24 h-24">
+                      <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                        <path
+                          className="text-slate-600"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          fill="none"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path
+                          className="text-sky-500"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          fill="none"
+                          strokeDasharray={`${(stats.totalStudyHours / 8) * 100}, 100`}
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-xl font-bold text-white">{stats.totalStudyHours}h</div>
+                          <div className="text-xs text-slate-400">of 8h goal</div>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <div className="mt-3 text-center">
+                    <div className="text-sm text-slate-300">⏰ Daily Progress</div>
+                  </div>
                 </div>
-                <div className="mt-3 text-center">
-                  <div className="text-sm text-slate-300">⏰ Daily Progress</div>
-                </div>
-              </div>
+              )}
 
               {/* Tasks Completed - Bar Chart */}
-              <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
+              {statsLoading ? (
+                <LoadingSkeleton className="h-48" />
+              ) : (
+                <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
                 <h3 className="text-lg font-bold text-white mb-3">Tasks Progress</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -520,9 +632,13 @@ const StudentDashboard = () => {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Unread Messages - Notification Badge Style */}
-              <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
+              {statsLoading || messagesLoading ? (
+                <LoadingSkeleton className="h-48" />
+              ) : (
+                <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
                 <h3 className="text-lg font-bold text-white mb-3">Messages</h3>
                 <div className="flex items-center justify-center">
                   <div className="relative">
@@ -547,9 +663,13 @@ const StudentDashboard = () => {
                   </button>
                 </div>
               </div>
+              )}
 
               {/* Study Streak - Fire Animation */}
-              <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
+              {statsLoading ? (
+                <LoadingSkeleton className="h-48" />
+              ) : (
+                <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-4">
                 <h3 className="text-lg font-bold text-white mb-3">Study Streak</h3>
                 <div className="flex items-center justify-center">
                   <div className="text-center">
@@ -576,13 +696,17 @@ const StudentDashboard = () => {
                   </div>
                 </div>
               </div>
+              )}
              </div>
            </div>
 
           {/* Right Column - 1/4 width */}
           <div className="lg:col-span-1 space-y-6 mt-8">
             {/* Today's Schedule */}
-            <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+            {tasksLoading ? (
+              <LoadingSkeleton className="h-96" />
+            ) : (
+              <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center">
                 <span className="mr-3">📅</span>
                 Today's Schedule
@@ -686,9 +810,13 @@ const StudentDashboard = () => {
                 </div>
               )}
             </div>
+            )}
 
             {/* Messages from Admin */}
-            <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+            {messagesLoading ? (
+              <LoadingSkeleton className="h-96" />
+            ) : (
+              <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center">
                 <span className="mr-3">📨</span>
                 Messages from Admin
@@ -703,7 +831,7 @@ const StudentDashboard = () => {
               <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 pr-2">
                 <div className="space-y-3">
                   {adminMessages.length > 0 ? (
-                    adminMessages.slice(0, 5).map((message, index) => {
+                    adminMessages.slice(0, visibleAdminMessages).map((message, index) => {
                       const isBroadcast = message.is_broadcast;
                       const isUnread = !message.read;
                       const gradientClass = isBroadcast 
@@ -745,22 +873,26 @@ const StudentDashboard = () => {
                 </div>
               </div>
               
-              {/* Scroll Indicator */}
-              {adminMessages.length > 5 && (
+              {/* Scroll Indicator / Pagination */}
+              {adminMessages.length > visibleAdminMessages && (
                 <div className="mt-3 text-center">
-                  <p className="text-xs text-slate-400">
-                    Showing 5 of {adminMessages.length} messages • Scroll for more
-                  </p>
+                  <button
+                    onClick={() => setVisibleAdminMessages((prev) => prev + 5)}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
+                  >
+                    Load more messages
+                  </button>
                 </div>
               )}
               
               <button 
-                onClick={() => navigate('/student/messages')}
-                className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium"
+              onClick={() => navigate('/student/messages')}
+              className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium"
               >
-                View All Messages
+              View All Messages
               </button>
             </div>
+            )}
            </div>
          </div>
 
@@ -901,6 +1033,24 @@ const StudentDashboard = () => {
                </div>
              </div>
 
+             {/* QR Pass Row */}
+             <div
+               className="group relative overflow-hidden bg-gradient-to-r from-cyan-900/40 to-blue-900/40 backdrop-blur-sm rounded-2xl border border-cyan-700/30 hover:border-cyan-500/50 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-cyan-500/20"
+               onClick={() => navigate('/student/profile')}
+             >
+               <div className="relative p-6 flex items-center justify-between">
+                 <div className="flex items-center space-x-4">
+                   <div className="p-4 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl shadow-lg">
+                     <span className="text-3xl">📱</span>
+                   </div>
+                   <div>
+                     <h3 className="text-xl font-bold text-white">My QR Pass</h3>
+                     <p className="text-slate-300">Open profile to show your QR to admin</p>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
            </div>
          </div>
 
@@ -1015,8 +1165,6 @@ const StudentDashboard = () => {
            </div>
          </div>
        </div>
-
-       <Footer />
 
        {/* Subscription Expiry Modal */}
        <SubscriptionExpiryModal

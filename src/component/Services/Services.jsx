@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import DownloadAppButton from '../common/DownloadAppButton';
 import { 
@@ -263,8 +261,6 @@ export default function Services() {
 
   return (
     <div className="min-h-screen flex flex-col font-body">
-      <Header />
-
       {/* Hero Section */}
       <section className="relative isolate pt-16 md:pt-20 overflow-hidden min-h-[60vh] flex items-center">
         <div className="absolute inset-0 -z-10">
@@ -452,8 +448,6 @@ export default function Services() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

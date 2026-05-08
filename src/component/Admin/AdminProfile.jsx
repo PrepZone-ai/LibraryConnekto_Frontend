@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
+import { lookupBankByIfsc } from '../../utils/ifscLookup';
+
+const BASE_MONTH_OPTIONS = [1, 3, 6, 9, 12];
 
 const AdminProfile = () => {
   const navigate = useNavigate();
@@ -22,7 +23,13 @@ const AdminProfile = () => {
     longitude: null,
     has_shift_system: false,
     shift_timings: [],
-    referral_code: ''
+    referral_code: '',
+    bank_account_holder_name: '',
+    bank_account_number: '',
+    bank_ifsc_code: '',
+    bank_name: '',
+    bank_branch_name: '',
+    razorpay_linked_account_id: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,7 +41,9 @@ const AdminProfile = () => {
   const [newPlanData, setNewPlanData] = useState({
     months: 1,
     amount: '',
-    discounted_amount: ''
+    discounted_amount: '',
+    plan_scope: 'non_shift',
+    shift_time: ''
   });
   const [savingPlan, setSavingPlan] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
@@ -42,11 +51,66 @@ const AdminProfile = () => {
   const [editPlanData, setEditPlanData] = useState({
     months: 1,
     amount: '',
-    discounted_amount: ''
+    discounted_amount: '',
+    plan_scope: 'non_shift',
+    shift_time: ''
   });
   const [deletingPlan, setDeletingPlan] = useState(null);
   const [referralCode, setReferralCode] = useState(null);
   const [generatingRefCode, setGeneratingRefCode] = useState(false);
+  const [ifscLookupLoading, setIfscLookupLoading] = useState(false);
+
+  const getPlanScopeLabel = (plan) => {
+    if (plan?.is_shift_plan) {
+      return plan?.shift_time ? `Shift: ${plan.shift_time}` : 'Shift-specific';
+    }
+    return profileData.has_shift_system ? 'Non-shift / All shifts' : 'General';
+  };
+
+  const getAvailableMonthsForScope = (scope, shiftTime = '') => {
+    const normalizedShift = (shiftTime || '').trim();
+    const usedMonths = new Set(
+      (subscriptionPlans || [])
+        .filter((plan) => {
+          if (scope === 'shift') {
+            if (!normalizedShift) return false;
+            return Boolean(plan.is_shift_plan) && (plan.shift_time || '').trim() === normalizedShift;
+          }
+          return !plan.is_shift_plan;
+        })
+        .map((plan) => Number(plan.months))
+    );
+    return BASE_MONTH_OPTIONS.filter((month) => !usedMonths.has(month));
+  };
+
+  const addPlanMonthOptions = getAvailableMonthsForScope(
+    newPlanData.plan_scope,
+    newPlanData.shift_time
+  );
+
+  const parseShiftTiming = (timing) => {
+    if (typeof timing === 'string') {
+      const [start = '', end = ''] = timing.split(' - ').map((s) => s.trim());
+      return { start, end };
+    }
+    return {
+      start: timing?.start || '',
+      end: timing?.end || ''
+    };
+  };
+
+  const normalizeShiftTimings = (timings) => {
+    if (!Array.isArray(timings)) return [];
+    return timings.map(parseShiftTiming);
+  };
+
+  const formatShiftTimingsForApi = (timings) => {
+    if (!Array.isArray(timings)) return [];
+    return timings
+      .map(parseShiftTiming)
+      .filter((timing) => timing.start && timing.end)
+      .map((timing) => `${timing.start} - ${timing.end}`);
+  };
 
   useEffect(() => {
     // Wait for auth to be initialized
@@ -62,6 +126,21 @@ const AdminProfile = () => {
       loadReferralCode();
     }
   }, [userType, navigate, authLoading, isLoggedIn, user]);
+
+  useEffect(() => {
+    if (!showAddPlanModal) return;
+    const current = Number(newPlanData.months);
+    if (addPlanMonthOptions.length === 0) return;
+    if (!addPlanMonthOptions.includes(current)) {
+      setNewPlanData((prev) => ({ ...prev, months: addPlanMonthOptions[0] }));
+    }
+  }, [
+    showAddPlanModal,
+    newPlanData.months,
+    newPlanData.plan_scope,
+    newPlanData.shift_time,
+    subscriptionPlans
+  ]);
 
   const fetchProfileData = async () => {
     try {
@@ -79,8 +158,14 @@ const AdminProfile = () => {
         latitude: response.latitude || null,
         longitude: response.longitude || null,
         has_shift_system: response.has_shift_system || false,
-        shift_timings: response.shift_timings || [],
-        referral_code: response.referral_code || ''
+        shift_timings: normalizeShiftTimings(response.shift_timings),
+        referral_code: response.referral_code || '',
+        bank_account_holder_name: response.bank_account_holder_name || '',
+        bank_account_number: response.bank_account_number || '',
+        bank_ifsc_code: response.bank_ifsc_code || '',
+        bank_name: response.bank_name || '',
+        bank_branch_name: response.bank_branch_name || '',
+        razorpay_linked_account_id: response.razorpay_linked_account_id || ''
       });
       
       // Fetch subscription plans after profile data is loaded
@@ -135,9 +220,10 @@ const AdminProfile = () => {
     try {
       setLoadingPlans(true);
       // Use admin-specific endpoint to get only current admin's subscription plans
-      const plans = await apiClient.get('/admin/subscription-plans');
-      console.log('Fetched subscription plans:', plans);
-      setSubscriptionPlans(plans || []);
+      const res = await apiClient.get('/admin/subscription-plans');
+      // API returns PaginatedResponse { items, total, page, page_size }
+      const plans = Array.isArray(res) ? res : (res?.items ?? []);
+      setSubscriptionPlans(plans);
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
       
@@ -164,6 +250,10 @@ const AdminProfile = () => {
       setMessage({ type: '', text: '' });
 
       // Validate form data
+      if (addPlanMonthOptions.length === 0) {
+        setMessage({ type: 'error', text: 'No duration is available for the selected plan scope.' });
+        return;
+      }
       if (!newPlanData.amount || parseFloat(newPlanData.amount) <= 0) {
         setMessage({ type: 'error', text: 'Please enter a valid amount' });
         return;
@@ -174,14 +264,22 @@ const AdminProfile = () => {
         return;
       }
 
-      // Prepare data for API (library_id is required by schema but will be overwritten by backend)
+      if (profileData.has_shift_system && newPlanData.plan_scope === 'shift') {
+        if (!newPlanData.shift_time) {
+          setMessage({ type: 'error', text: 'Select a shift for shift-specific plans' });
+          return;
+        }
+      }
+
+      const isShiftPlan = profileData.has_shift_system && newPlanData.plan_scope === 'shift';
       const planData = {
-        library_id: "00000000-0000-0000-0000-000000000000", // Dummy UUID, will be overwritten
-        months: parseInt(newPlanData.months),
+        months: parseInt(newPlanData.months, 10),
         amount: parseFloat(newPlanData.amount),
         discounted_amount: newPlanData.discounted_amount ? parseFloat(newPlanData.discounted_amount) : null,
-        is_custom: ![1, 3, 6, 9, 12].includes(parseInt(newPlanData.months)),
-        is_active: true
+        is_custom: ![1, 3, 6, 9, 12].includes(parseInt(newPlanData.months, 10)),
+        is_active: true,
+        is_shift_plan: isShiftPlan,
+        shift_time: isShiftPlan ? newPlanData.shift_time : null
       };
 
       // Create the plan
@@ -192,7 +290,9 @@ const AdminProfile = () => {
       setNewPlanData({
         months: 1,
         amount: '',
-        discounted_amount: ''
+        discounted_amount: '',
+        plan_scope: 'non_shift',
+        shift_time: ''
       });
       setShowAddPlanModal(false);
       setMessage({ type: 'success', text: 'Subscription plan created successfully!' });
@@ -210,7 +310,7 @@ const AdminProfile = () => {
       } else if (error.message.includes('400')) {
         errorMessage = 'Bad request. Please check your input and try again.';
       } else if (error.message.includes('409')) {
-        errorMessage = 'A subscription plan with this duration already exists.';
+        errorMessage = error.message || 'A plan with this duration and scope already exists.';
       }
       
       setMessage({ type: 'error', text: errorMessage });
@@ -224,7 +324,9 @@ const AdminProfile = () => {
     setEditPlanData({
       months: plan.months,
       amount: plan.amount.toString(),
-      discounted_amount: plan.discounted_amount ? plan.discounted_amount.toString() : ''
+      discounted_amount: plan.discounted_amount ? plan.discounted_amount.toString() : '',
+      plan_scope: plan.is_shift_plan ? 'shift' : 'non_shift',
+      shift_time: plan.shift_time || ''
     });
     setShowEditPlanModal(true);
   };
@@ -245,14 +347,22 @@ const AdminProfile = () => {
         return;
       }
 
-      // Prepare data for API (library_id is required by schema but will be overwritten by backend)
+      if (profileData.has_shift_system && editPlanData.plan_scope === 'shift') {
+        if (!editPlanData.shift_time) {
+          setMessage({ type: 'error', text: 'Select a shift for shift-specific plans' });
+          return;
+        }
+      }
+
+      const isShiftPlan = profileData.has_shift_system && editPlanData.plan_scope === 'shift';
       const planData = {
-        library_id: "00000000-0000-0000-0000-000000000000", // Dummy UUID, will be overwritten
-        months: parseInt(editPlanData.months),
+        months: parseInt(editPlanData.months, 10),
         amount: parseFloat(editPlanData.amount),
         discounted_amount: editPlanData.discounted_amount ? parseFloat(editPlanData.discounted_amount) : null,
-        is_custom: ![1, 3, 6, 9, 12].includes(parseInt(editPlanData.months)),
-        is_active: true
+        is_custom: ![1, 3, 6, 9, 12].includes(parseInt(editPlanData.months, 10)),
+        is_active: true,
+        is_shift_plan: isShiftPlan,
+        shift_time: isShiftPlan ? editPlanData.shift_time : null
       };
 
       // Update the plan
@@ -262,7 +372,9 @@ const AdminProfile = () => {
       setEditPlanData({
         months: 1,
         amount: '',
-        discounted_amount: ''
+        discounted_amount: '',
+        plan_scope: 'non_shift',
+        shift_time: ''
       });
       setShowEditPlanModal(false);
       setEditingPlan(null);
@@ -282,6 +394,8 @@ const AdminProfile = () => {
         errorMessage = 'Bad request. Please check your input and try again.';
       } else if (error.message.includes('404')) {
         errorMessage = 'Subscription plan not found.';
+      } else if (error.message.includes('409')) {
+        errorMessage = error.message || 'A plan with this duration and scope already exists.';
       }
       
       setMessage({ type: 'error', text: errorMessage });
@@ -316,6 +430,26 @@ const AdminProfile = () => {
     }));
   };
 
+  const handleIfscBlur = async () => {
+    const currentIfsc = (profileData.bank_ifsc_code || '').trim().toUpperCase();
+    if (!currentIfsc) return;
+    try {
+      setIfscLookupLoading(true);
+      const result = await lookupBankByIfsc(currentIfsc);
+      setProfileData((prev) => ({
+        ...prev,
+        bank_ifsc_code: result.ifsc,
+        bank_name: result.bankName || prev.bank_name,
+        bank_branch_name: result.branchName || prev.bank_branch_name,
+      }));
+      setMessage({ type: '', text: '' });
+    } catch (lookupError) {
+      setMessage({ type: 'error', text: lookupError?.message || 'Could not fetch bank details from IFSC.' });
+    } finally {
+      setIfscLookupLoading(false);
+    }
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -344,6 +478,29 @@ const AdminProfile = () => {
     setMessage({ type: '', text: '' });
 
     try {
+      const ifscValue = (profileData.bank_ifsc_code || '').trim().toUpperCase();
+      const accountValue = (profileData.bank_account_number || '').trim();
+      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      const accountRegex = /^\d{9,18}$/;
+
+      const formattedShiftTimings = profileData.has_shift_system
+        ? formatShiftTimingsForApi(profileData.shift_timings)
+        : [];
+      if (profileData.has_shift_system && formattedShiftTimings.length === 0) {
+        setMessage({ type: 'error', text: 'Please add at least one valid shift timing.' });
+        return;
+      }
+
+      if (ifscValue && !ifscRegex.test(ifscValue)) {
+        setMessage({ type: 'error', text: 'Please enter a valid IFSC code (example: HDFC0001234).' });
+        return;
+      }
+
+      if (accountValue && !accountRegex.test(accountValue)) {
+        setMessage({ type: 'error', text: 'Please enter a valid account number (9 to 18 digits).' });
+        return;
+      }
+
       // Prepare data according to backend schema
       const updateData = {
         admin_name: profileData.admin_name,
@@ -354,8 +511,14 @@ const AdminProfile = () => {
         latitude: profileData.latitude,
         longitude: profileData.longitude,
         has_shift_system: profileData.has_shift_system,
-        shift_timings: profileData.shift_timings,
-        referral_code: profileData.referral_code
+        shift_timings: formattedShiftTimings,
+        referral_code: profileData.referral_code,
+        bank_account_holder_name: profileData.bank_account_holder_name?.trim() || null,
+        bank_account_number: accountValue || null,
+        bank_ifsc_code: ifscValue || null,
+        bank_name: profileData.bank_name?.trim() || null,
+        bank_branch_name: profileData.bank_branch_name?.trim() || null,
+        razorpay_linked_account_id: profileData.razorpay_linked_account_id?.trim() || null
       };
 
       const response = await apiClient.put('/admin/details', updateData);
@@ -377,19 +540,40 @@ const AdminProfile = () => {
     }
   };
 
+  const handleShiftTimingChange = (index, field, value) => {
+    setProfileData((prev) => ({
+      ...prev,
+      shift_timings: prev.shift_timings.map((timing, i) =>
+        i === index ? { ...parseShiftTiming(timing), [field]: value } : parseShiftTiming(timing)
+      )
+    }));
+  };
+
+  const handleAddShiftTiming = () => {
+    setProfileData((prev) => ({
+      ...prev,
+      shift_timings: [...normalizeShiftTimings(prev.shift_timings), { start: '09:00', end: '13:00' }]
+    }));
+  };
+
+  const handleRemoveShiftTiming = (index) => {
+    setProfileData((prev) => ({
+      ...prev,
+      shift_timings: normalizeShiftTimings(prev.shift_timings).filter((_, i) => i !== index)
+    }));
+  };
+
   // Show loading while auth is initializing
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white"></div>
             <p className="text-white/70 mt-4">Initializing authentication...</p>
           </div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
@@ -397,22 +581,18 @@ const AdminProfile = () => {
   if (loading && isLoggedIn) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white"></div>
             <p className="text-white/70 mt-4">Loading profile...</p>
           </div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
-      
       <main className="flex-grow container mx-auto px-4 pt-24 pb-8 relative">
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -735,7 +915,12 @@ const AdminProfile = () => {
                       checked={profileData.has_shift_system}
                       onChange={(e) => setProfileData(prev => ({
                         ...prev,
-                        has_shift_system: e.target.checked
+                        has_shift_system: e.target.checked,
+                        shift_timings: e.target.checked
+                          ? (normalizeShiftTimings(prev.shift_timings).length > 0
+                              ? normalizeShiftTimings(prev.shift_timings)
+                              : [{ start: '09:00', end: '13:00' }])
+                          : []
                       }))}
                       disabled={!editing}
                       className="w-4 h-4 text-purple-600 bg-white/10 border-white/20 rounded focus:ring-purple-500 focus:ring-2 disabled:opacity-50"
@@ -747,30 +932,226 @@ const AdminProfile = () => {
             </div>
           </div>
 
-          {/* Shift System Section */}
-          {profileData.has_shift_system && profileData.shift_timings && profileData.shift_timings.length > 0 && (
-            <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
-              <h3 className="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                Shift Timings
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {profileData.shift_timings.map((timing, index) => (
-                  <div key={index} className="bg-white/5 border border-white/10 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-white font-medium">Shift {index + 1}</h4>
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    </div>
-                    <p className="text-white/70 text-sm">
-                      {typeof timing === 'string' ? timing : `${timing.start} - ${timing.end}`}
-                    </p>
-                  </div>
-                ))}
+          {/* Bank & Payout Details */}
+          <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
+            <h3 className="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a5 5 0 00-10 0v2m-2 0h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2z" />
+                </svg>
               </div>
+              Bank & Payout Details
+            </h3>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-white/70 text-sm font-medium mb-2">
+                  Payment Settlement (Razorpay Route)
+                </label>
+                {editing ? (
+                  <input
+                    type="text"
+                    name="razorpay_linked_account_id"
+                    value={profileData.razorpay_linked_account_id}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="acc_... (settles booking, subscription and transfer payments here)"
+                  />
+                ) : (
+                  <div className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white">
+                    {profileData.razorpay_linked_account_id || 'Not set'}
+                  </div>
+                )}
+                <p className="text-white/50 text-xs mt-1">
+                  Rs.1 booking tokens stay on the platform; other online payments route to this linked account when Route is enabled on the server.
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-white/10">
+                <h4 className="text-white font-medium mb-4">Bank Details</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white/70 text-sm font-medium mb-2">
+                      Account Holder Name
+                    </label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        name="bank_account_holder_name"
+                        value={profileData.bank_account_holder_name}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Enter account holder name"
+                      />
+                    ) : (
+                      <div className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white">
+                        {profileData.bank_account_holder_name || 'Not set'}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-white/70 text-sm font-medium mb-2">
+                      IFSC Code
+                    </label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        name="bank_ifsc_code"
+                        value={profileData.bank_ifsc_code}
+                        onChange={handleInputChange}
+                        onBlur={handleIfscBlur}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Enter IFSC code"
+                      />
+                    ) : (
+                      <div className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white">
+                        {profileData.bank_ifsc_code || 'Not set'}
+                      </div>
+                    )}
+                    {ifscLookupLoading && (
+                      <p className="text-blue-200 text-xs mt-1">Detecting bank and branch from IFSC...</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-white/70 text-sm font-medium mb-2">
+                      Branch Name
+                    </label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        name="bank_branch_name"
+                        value={profileData.bank_branch_name}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Auto-filled from IFSC (editable)"
+                      />
+                    ) : (
+                      <div className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white">
+                        {profileData.bank_branch_name || 'Not set'}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-white/70 text-sm font-medium mb-2">
+                      Account Number
+                    </label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        name="bank_account_number"
+                        value={profileData.bank_account_number}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Enter bank account number"
+                      />
+                    ) : (
+                      <div className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white">
+                        {profileData.bank_account_number || 'Not set'}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-white/70 text-sm font-medium mb-2">
+                      Bank Name
+                    </label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        name="bank_name"
+                        value={profileData.bank_name}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Enter bank name"
+                      />
+                    ) : (
+                      <div className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white">
+                        {profileData.bank_name || 'Not set'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Shift System Section */}
+          {profileData.has_shift_system && (
+            <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-semibold text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  Shift Timings
+                </h3>
+                {editing && (
+                  <button
+                    type="button"
+                    onClick={handleAddShiftTiming}
+                    className="px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white text-sm font-medium rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-200"
+                  >
+                    + Add Shift
+                  </button>
+                )}
+              </div>
+
+              {(profileData.shift_timings || []).length === 0 ? (
+                <div className="text-white/70 text-sm bg-white/5 border border-white/10 rounded-lg p-4">
+                  No shift timings configured yet.
+                  {editing ? ' Click "Add Shift" to create one.' : ''}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(profileData.shift_timings || []).map((timing, index) => {
+                    const shift = parseShiftTiming(timing);
+                    return (
+                      <div key={index} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-white font-medium">Shift {index + 1}</h4>
+                          {editing ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveShiftTiming(index)}
+                              className="text-red-300 hover:text-red-200 text-xs font-medium"
+                            >
+                              Remove
+                            </button>
+                          ) : (
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          )}
+                        </div>
+                        {editing ? (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs text-white/70 mb-1">Start</label>
+                              <input
+                                type="time"
+                                value={shift.start}
+                                onChange={(e) => handleShiftTimingChange(index, 'start', e.target.value)}
+                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-white/70 mb-1">End</label>
+                              <input
+                                type="time"
+                                value={shift.end}
+                                onChange={(e) => handleShiftTimingChange(index, 'end', e.target.value)}
+                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-white/70 text-sm">
+                            {shift.start && shift.end ? `${shift.start} - ${shift.end}` : 'Not configured'}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -833,6 +1214,11 @@ const AdminProfile = () => {
                       ) : (
                         <div className="text-2xl font-bold text-white text-center">₹{plan.amount}</div>
                       )}
+                    </div>
+                    <div className="mb-4 text-center">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-200 border border-blue-500/30">
+                        {getPlanScopeLabel(plan)}
+                      </span>
                     </div>
 
                     <div className="flex gap-2">
@@ -900,14 +1286,24 @@ const AdminProfile = () => {
                 <select 
                   value={newPlanData.months}
                   onChange={(e) => setNewPlanData(prev => ({ ...prev, months: e.target.value }))}
+                  disabled={addPlanMonthOptions.length === 0}
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
-                  <option value="1" className="bg-slate-800">1 Month</option>
-                  <option value="3" className="bg-slate-800">3 Months</option>
-                  <option value="6" className="bg-slate-800">6 Months</option>
-                  <option value="9" className="bg-slate-800">9 Months</option>
-                  <option value="12" className="bg-slate-800">12 Months</option>
+                  {addPlanMonthOptions.length > 0 ? (
+                    addPlanMonthOptions.map((month) => (
+                      <option key={month} value={month} className="bg-slate-800">
+                        {month} Month{month > 1 ? 's' : ''}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" className="bg-slate-800">No available durations</option>
+                  )}
                 </select>
+                {addPlanMonthOptions.length === 0 && (
+                  <p className="text-xs text-red-300 mt-2">
+                    Duration not available for selected scope. Try another scope or shift.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -935,12 +1331,47 @@ const AdminProfile = () => {
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
+              {profileData.has_shift_system && (
+                <>
+                  <div>
+                    <label className="block text-white/70 text-sm font-medium mb-2">
+                      Plan Scope
+                    </label>
+                    <select
+                      value={newPlanData.plan_scope}
+                      onChange={(e) => setNewPlanData(prev => ({ ...prev, plan_scope: e.target.value, shift_time: e.target.value === 'shift' ? prev.shift_time : '' }))}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="non_shift" className="bg-slate-800">Non-shift / All</option>
+                      <option value="shift" className="bg-slate-800">Shift specific</option>
+                    </select>
+                  </div>
+                  {newPlanData.plan_scope === 'shift' && (
+                    <div>
+                      <label className="block text-white/70 text-sm font-medium mb-2">
+                        Shift Time
+                      </label>
+                      <select
+                        value={newPlanData.shift_time}
+                        onChange={(e) => setNewPlanData(prev => ({ ...prev, shift_time: e.target.value }))}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="" className="bg-slate-800">Select shift</option>
+                        {(profileData.shift_timings || []).map((timing, index) => {
+                          const label = typeof timing === 'string' ? timing : `${timing.start} - ${timing.end}`;
+                          return <option key={index} value={label} className="bg-slate-800">{label}</option>;
+                        })}
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowAddPlanModal(false);
-                    setNewPlanData({ months: 1, amount: '', discounted_amount: '' });
+                    setNewPlanData({ months: 1, amount: '', discounted_amount: '', plan_scope: 'non_shift', shift_time: '' });
                   }}
                   disabled={savingPlan}
                   className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg border border-white/20 hover:border-white/30 transition-all duration-200 disabled:opacity-50"
@@ -977,7 +1408,7 @@ const AdminProfile = () => {
                 onClick={() => {
                   setShowEditPlanModal(false);
                   setEditingPlan(null);
-                  setEditPlanData({ months: 1, amount: '', discounted_amount: '' });
+                  setEditPlanData({ months: 1, amount: '', discounted_amount: '', plan_scope: 'non_shift', shift_time: '' });
                 }}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
@@ -1030,13 +1461,48 @@ const AdminProfile = () => {
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
+              {profileData.has_shift_system && (
+                <>
+                  <div>
+                    <label className="block text-white/70 text-sm font-medium mb-2">
+                      Plan Scope
+                    </label>
+                    <select
+                      value={editPlanData.plan_scope}
+                      onChange={(e) => setEditPlanData(prev => ({ ...prev, plan_scope: e.target.value, shift_time: e.target.value === 'shift' ? prev.shift_time : '' }))}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="non_shift" className="bg-slate-800">Non-shift / All</option>
+                      <option value="shift" className="bg-slate-800">Shift specific</option>
+                    </select>
+                  </div>
+                  {editPlanData.plan_scope === 'shift' && (
+                    <div>
+                      <label className="block text-white/70 text-sm font-medium mb-2">
+                        Shift Time
+                      </label>
+                      <select
+                        value={editPlanData.shift_time}
+                        onChange={(e) => setEditPlanData(prev => ({ ...prev, shift_time: e.target.value }))}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="" className="bg-slate-800">Select shift</option>
+                        {(profileData.shift_timings || []).map((timing, index) => {
+                          const label = typeof timing === 'string' ? timing : `${timing.start} - ${timing.end}`;
+                          return <option key={index} value={label} className="bg-slate-800">{label}</option>;
+                        })}
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowEditPlanModal(false);
                     setEditingPlan(null);
-                    setEditPlanData({ months: 1, amount: '', discounted_amount: '' });
+                    setEditPlanData({ months: 1, amount: '', discounted_amount: '', plan_scope: 'non_shift', shift_time: '' });
                   }}
                   disabled={savingPlan}
                   className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg border border-white/20 hover:border-white/30 transition-all duration-200 disabled:opacity-50"
@@ -1063,8 +1529,7 @@ const AdminProfile = () => {
         </div>
       )}
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

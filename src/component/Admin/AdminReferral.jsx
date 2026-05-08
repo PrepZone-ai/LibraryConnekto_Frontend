@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import FrontImage from '../../assets/Front.png';
@@ -97,12 +95,10 @@ const AdminReferral = () => {
   };
 
   const adminCode = codes.find(c => c.type === 'admin');
-  const shareText = adminCode ? `Join my library using referral code ${adminCode.code}` : '';
+  const shareText = adminCode ? `Register your study library with Library Connekto and transform your traditional system into a fully digital, smart, and efficient study library management platform. Use the referral code while signing up to streamline operations, manage records seamlessly, and elevate your library experience today.${adminCode.code}` : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
-
       <main className="flex-grow container mx-auto px-4 pt-24 pb-8 relative">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 right-20 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
@@ -297,8 +293,7 @@ const AdminReferral = () => {
         </div>
       </main>
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

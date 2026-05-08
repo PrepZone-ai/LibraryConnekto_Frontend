@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { apiClient, setAuthToken } from '../../lib/api'
 
 export default function AuthModal({ open, role = 'student', onClose }) {
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot_admin'
   const [emailOrId, setEmailOrId] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -12,6 +12,7 @@ export default function AuthModal({ open, role = 'student', onClose }) {
 
   const title = useMemo(() => {
     const roleLabel = role === 'admin' ? 'Admin / Owner' : 'Student'
+    if (mode === 'forgot_admin') return `${roleLabel} · Forgot password`
     const action = mode === 'signin' ? 'Sign In' : 'Sign Up'
     return `${roleLabel} ${action}`
   }, [role, mode])
@@ -38,6 +39,16 @@ export default function AuthModal({ open, role = 'student', onClose }) {
     setMessage('')
     setLoading(true)
     try {
+      if (role === 'admin' && mode === 'forgot_admin') {
+        const em = (emailOrId || '').trim().toLowerCase()
+        if (!em) {
+          setError('Enter your email address.')
+          return
+        }
+        const res = await apiClient.postAnonymous('/auth/admin/forgot-password', { email: em })
+        setMessage(res?.message || 'If an account exists for this email, check your inbox for a reset link.')
+        return
+      }
       if (role === 'admin') {
         if (mode === 'signup') {
           await apiClient.post('/auth/admin/signup', { email: emailOrId, password })
@@ -92,31 +103,45 @@ export default function AuthModal({ open, role = 'student', onClose }) {
               <label className="block text-sm text-slate-300 mb-1">{role === 'admin' ? 'Email' : 'Student ID or Email'}</label>
               <input value={emailOrId} onChange={(e) => setEmailOrId(e.target.value)} className="w-full px-3 py-2 rounded bg-slate-700 outline-none focus:ring-2 focus:ring-primary-500" required />
             </div>
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 rounded bg-slate-700 outline-none focus:ring-2 focus:ring-primary-500" required />
-            </div>
+            {mode !== 'forgot_admin' && (
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Password</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 rounded bg-slate-700 outline-none focus:ring-2 focus:ring-primary-500" required />
+              </div>
+            )}
             {error && <p className="text-red-400 text-sm">{error}</p>}
             {message && <p className="text-emerald-400 text-sm">{message}</p>}
             <button type="submit" disabled={loading} className="w-full py-2 rounded bg-primary-600 hover:bg-primary-500 disabled:opacity-60">
-              {loading ? 'Please wait...' : (mode === 'signin' ? 'Sign In' : 'Sign Up')}
+              {loading
+                ? 'Please wait...'
+                : mode === 'forgot_admin'
+                  ? 'Send reset link'
+                  : mode === 'signin'
+                    ? 'Sign In'
+                    : 'Sign Up'}
             </button>
           </form>
 
-          <div className="mt-3 text-sm text-slate-300">
+          <div className="mt-3 text-sm text-slate-300 space-y-2">
             {role === 'admin' ? (
-              // Admin can switch between signin and signup
-              mode === 'signin' ? (
-                <button onClick={() => { setMode('signup'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Don't have an account? Sign Up</button>
+              mode === 'forgot_admin' ? (
+                <button type="button" onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Back to Sign In</button>
+              ) : mode === 'signin' ? (
+                <div className="flex flex-col gap-2">
+                  <button type="button" onClick={() => { setMode('forgot_admin'); setError(''); setMessage(''); }} className="text-left text-primary-300 hover:text-primary-200">Forgot password?</button>
+                  <button type="button" onClick={() => { setMode('signup'); setError(''); setMessage(''); }} className="text-left text-primary-300 hover:text-primary-200">Don't have an account? Sign Up</button>
+                </div>
               ) : (
-                <button onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Already have an account? Sign In</button>
+                <button type="button" onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Already have an account? Sign In</button>
               )
             ) : (
-              // Students can only sign in, signup is handled by admins
               mode === 'signin' ? (
-                <p className="text-slate-400 text-xs">Students are registered by library admins. Contact your library for account creation.</p>
+                <div className="space-y-2">
+                  <a href="/student/forgot-password" onClick={() => onClose?.()} className="block text-primary-300 hover:text-primary-200">Forgot password?</a>
+                  <p className="text-slate-400 text-xs">Students are registered by library admins. Contact your library for account creation.</p>
+                </div>
               ) : (
-                <button onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Back to Sign In</button>
+                <button type="button" onClick={() => { setMode('signin'); setError(''); setMessage(''); }} className="text-primary-300 hover:text-primary-200">Back to Sign In</button>
               )
             )}
           </div>

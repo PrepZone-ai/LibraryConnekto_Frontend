@@ -51,13 +51,6 @@ export default function Footer() {
                 </svg>
                 <span>+91 9982385483</span>
               </div>
-              <div className="flex items-center gap-3 text-slate-300">
-                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>Uttardhona Ayodhya Road Lucknow 226028</span>
-              </div>
             </div>
 
             {/* Social Links */}
@@ -180,11 +173,6 @@ export default function Footer() {
             © 2025 Library Connekto. All rights reserved.
           </div>
           
-          <div className="flex items-center gap-6 text-slate-400">
-            <span className="text-sm">Trusted by 500+ Libraries</span>
-            <span className="text-sm">•</span>
-            <span className="text-sm">10,000+ Students</span>
-          </div>
         </div>
       </div>
     </footer>

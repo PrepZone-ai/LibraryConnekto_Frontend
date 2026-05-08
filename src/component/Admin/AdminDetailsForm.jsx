@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
+import { lookupBankByIfsc } from '../../utils/ifscLookup';
 const AdminDetailsForm = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
@@ -26,10 +24,16 @@ const AdminDetailsForm = () => {
       { start: '14:00', end: '18:00', name: 'Evening Shift' },
       { start: '19:00', end: '23:00', name: 'Night Shift' }
     ],
-    referral_code: ''
+    referral_code: '',
+    bank_account_holder_name: '',
+    bank_account_number: '',
+    bank_ifsc_code: '',
+    bank_name: '',
+    bank_branch_name: ''
   });
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState('');
+  const [ifscLookupLoading, setIfscLookupLoading] = useState(false);
 
   useEffect(() => {
     if (userType !== 'admin') {
@@ -120,7 +124,12 @@ const AdminDetailsForm = () => {
               { start: '14:00', end: '18:00', name: 'Evening Shift' },
               { start: '19:00', end: '23:00', name: 'Night Shift' }
             ],
-          referral_code: response.referral_code || ''
+          referral_code: response.referral_code || '',
+          bank_account_holder_name: response.bank_account_holder_name || '',
+          bank_account_number: response.bank_account_number || '',
+          bank_ifsc_code: response.bank_ifsc_code || '',
+          bank_name: response.bank_name || '',
+          bank_branch_name: response.bank_branch_name || ''
         });
       }
     } catch (error) {
@@ -152,6 +161,25 @@ const AdminDetailsForm = () => {
     }));
   };
 
+  const handleIfscBlur = async () => {
+    const currentIfsc = (formData.bank_ifsc_code || '').trim().toUpperCase();
+    if (!currentIfsc) return;
+    try {
+      setIfscLookupLoading(true);
+      const result = await lookupBankByIfsc(currentIfsc);
+      setFormData((prev) => ({
+        ...prev,
+        bank_ifsc_code: result.ifsc,
+        bank_name: result.bankName || prev.bank_name,
+        bank_branch_name: result.branchName || prev.bank_branch_name,
+      }));
+    } catch (lookupError) {
+      setError(lookupError?.message || 'Could not fetch bank details from IFSC.');
+    } finally {
+      setIfscLookupLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -159,12 +187,29 @@ const AdminDetailsForm = () => {
     setSuccess('');
 
     try {
+      const ifscValue = (formData.bank_ifsc_code || '').trim().toUpperCase();
+      const accountValue = (formData.bank_account_number || '').trim();
+      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      const accountRegex = /^\d{9,18}$/;
+
       // Validate required fields
       if (!formData.admin_name.trim() || !formData.library_name.trim() || 
           !formData.mobile_no.trim() || !formData.address.trim() || 
           !formData.total_seats || formData.total_seats <= 0 ||
           !formData.latitude || !formData.longitude) {
         setError('Please fill in all required fields including location coordinates');
+        setLoading(false);
+        return;
+      }
+
+      if (ifscValue && !ifscRegex.test(ifscValue)) {
+        setError('Please enter a valid IFSC code (example: HDFC0001234).');
+        setLoading(false);
+        return;
+      }
+
+      if (accountValue && !accountRegex.test(accountValue)) {
+        setError('Please enter a valid account number (9 to 18 digits).');
         setLoading(false);
         return;
       }
@@ -183,7 +228,12 @@ const AdminDetailsForm = () => {
           formData.shift_timings
             .filter(timing => timing.start && timing.end)
             .map(timing => `${timing.start} - ${timing.end}`) : null,
-        referral_code: formData.referral_code.trim() || null
+        referral_code: formData.referral_code.trim() || null,
+        bank_account_holder_name: formData.bank_account_holder_name.trim() || null,
+        bank_account_number: accountValue || null,
+        bank_ifsc_code: ifscValue || null,
+        bank_name: formData.bank_name.trim() || null,
+        bank_branch_name: formData.bank_branch_name.trim() || null
       };
 
       // Submit admin details
@@ -204,8 +254,6 @@ const AdminDetailsForm = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-      <Header />
-      
       <main className="flex-grow container mx-auto px-4 pt-24 pb-8 relative">
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -551,11 +599,104 @@ const AdminDetailsForm = () => {
               </div>
             )}
 
-            {/* Referral Code Section */}
+            {/* Bank Details Section */}
             <div className="space-y-6">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-sm">5</span>
+                </div>
+                <h2 className="text-2xl font-semibold text-white">Bank Details (Optional)</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label htmlFor="bank_account_holder_name" className="block text-sm font-medium text-white/90">
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    id="bank_account_holder_name"
+                    name="bank_account_holder_name"
+                    value={formData.bank_account_holder_name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
+                    placeholder="Enter account holder name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="bank_ifsc_code" className="block text-sm font-medium text-white/90">
+                    IFSC Code
+                  </label>
+                  <input
+                    type="text"
+                    id="bank_ifsc_code"
+                    name="bank_ifsc_code"
+                    value={formData.bank_ifsc_code}
+                    onChange={handleInputChange}
+                    onBlur={handleIfscBlur}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200 uppercase"
+                    placeholder="Enter IFSC code"
+                  />
+                  {ifscLookupLoading && (
+                    <p className="text-blue-200 text-xs">Detecting bank and branch from IFSC...</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="bank_branch_name" className="block text-sm font-medium text-white/90">
+                    Branch Name
+                  </label>
+                  <input
+                    type="text"
+                    id="bank_branch_name"
+                    name="bank_branch_name"
+                    value={formData.bank_branch_name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
+                    placeholder="Auto-filled from IFSC (editable)"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="bank_account_number" className="block text-sm font-medium text-white/90">
+                    Account Number
+                  </label>
+                  <input
+                    type="text"
+                    id="bank_account_number"
+                    name="bank_account_number"
+                    value={formData.bank_account_number}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
+                    placeholder="Enter account number"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="bank_name" className="block text-sm font-medium text-white/90">
+                    Bank Name
+                  </label>
+                  <input
+                    type="text"
+                    id="bank_name"
+                    name="bank_name"
+                    value={formData.bank_name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
+                    placeholder="Enter bank name"
+                  />
+                </div>
+              </div>
+              <p className="text-white/50 text-sm">
+                Add bank details during onboarding so payout setup can be completed in one pass. You can edit these later in your profile.
+              </p>
+            </div>
+
+            {/* Referral Code Section */}
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">6</span>
                 </div>
                 <h2 className="text-2xl font-semibold text-white">Referral Code</h2>
               </div>
@@ -606,8 +747,7 @@ const AdminDetailsForm = () => {
         </div>
       </main>
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import Header from '../Header/Header'
-import Footer from '../Footer/Footer'
 
 export default function EmailVerificationError() {
   const [searchParams] = useSearchParams()
@@ -34,8 +32,6 @@ export default function EmailVerificationError() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
-      
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 text-center">
           {/* Error Icon */}
@@ -97,8 +93,6 @@ export default function EmailVerificationError() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   )
 }

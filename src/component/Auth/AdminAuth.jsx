@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import Header from '../Header/Header'
-import Footer from '../Footer/Footer'
+import { apiClient } from '../../lib/api'
 
 // Icons
 const UserIcon = ({ className = "w-6 h-6" }) => (
@@ -32,15 +31,16 @@ const EyeOffIcon = ({ className = "w-5 h-5" }) => (
 
 export default function AdminAuth() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, resendAdminVerification } = useAuth()
   const [searchParams] = useSearchParams()
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
 
   useEffect(() => {
     // Check if mode is specified in URL
@@ -48,10 +48,27 @@ export default function AdminAuth() {
     if (urlMode === 'signup') {
       setMode('signup')
     }
+    const urlMessage = searchParams.get('message')
+    if (urlMessage) {
+      setMode('signin')
+      setMessage(decodeURIComponent(urlMessage))
+    }
   }, [searchParams])
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [resendCooldown])
+
   const toggleMode = () => {
-    setMode(mode === 'signin' ? 'signup' : 'signin')
+    if (mode === 'forgot') {
+      setMode('signin')
+    } else {
+      setMode(mode === 'signin' ? 'signup' : 'signin')
+    }
     setError('')
     setMessage('')
   }
@@ -62,6 +79,17 @@ export default function AdminAuth() {
     setMessage('')
     setLoading(true)
     try {
+      if (mode === 'forgot') {
+        if (!email.trim()) {
+          setError('Enter your email address.')
+          return
+        }
+        const res = await apiClient.postAnonymous('/auth/admin/forgot-password', {
+          email: email.trim().toLowerCase(),
+        })
+        setMessage(res?.message || 'If an account exists for this email, you will receive reset instructions.')
+        return
+      }
       if (mode === 'signin') {
         const result = await login(email, password, 'admin')
         if (result.success) {
@@ -78,7 +106,7 @@ export default function AdminAuth() {
         // Admin signup
         const result = await login(email, password, 'admin', 'signup')
         if (result.success) {
-          setMessage('Signup successful! Please check your email to verify your account, then sign in.')
+          setMessage(result.message || 'Signup successful. Verification email has been queued. Please sign in after verification.')
           setMode('signin')
           setEmail('')
           setPassword('')
@@ -93,10 +121,46 @@ export default function AdminAuth() {
     }
   }
 
+  const handleResendVerification = async () => {
+    setError('')
+    setMessage('')
+    if (resendCooldown > 0) {
+      setError(`Please wait ${resendCooldown}s before requesting another verification email.`)
+      return
+    }
+    if (!email) {
+      setError('Enter your email address first, then click resend verification.')
+      return
+    }
+    setLoading(true)
+    try {
+      const result = await resendAdminVerification(email)
+      if (result.success) {
+        setMessage(result.message || 'Verification email re-queued. Please check inbox and spam.')
+      } else {
+        setError(result.error || 'Could not resend verification email.')
+        if (result.retryAfterSeconds != null && !Number.isNaN(Number(result.retryAfterSeconds))) {
+          setResendCooldown(Number(result.retryAfterSeconds))
+        } else {
+          const match = (result.error || '').match(/wait\s+(\d+)\s+seconds?/i)
+          if (match && match[1]) {
+            setResendCooldown(Number(match[1]))
+          }
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Could not resend verification email.')
+      const match = (err.message || '').match(/wait\s+(\d+)\s+seconds?/i)
+      if (match && match[1]) {
+        setResendCooldown(Number(match[1]))
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      
       <main className="flex-grow relative flex items-center justify-center px-4 pt-20 pb-8 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 -z-10">
@@ -128,10 +192,18 @@ export default function AdminAuth() {
                   />
                 </div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
+              {mode === 'forgot'
+                ? 'Forgot password'
+                : mode === 'signin'
+                  ? 'Welcome Back'
+                  : 'Create Account'}
             </h1>
             <p className="text-white/70">
-              {mode === 'signin' ? 'Sign in to your admin account' : 'Join as a new admin'}
+              {mode === 'forgot'
+                ? 'Enter your email and we will send a reset link'
+                : mode === 'signin'
+                  ? 'Sign in to your admin account'
+                  : 'Join as a new admin'}
             </p>
           </div>
 
@@ -156,33 +228,48 @@ export default function AdminAuth() {
             </div>
 
             {/* Password Field */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-white/90">Password</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <LockIcon className="w-5 h-5 text-white/50" />
+            {mode !== 'forgot' && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-white/90">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <LockIcon className="w-5 h-5 text-white/50" />
+                  </div>
+                  <input 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    type={showPassword ? 'text' : 'password'}
+                    className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200" 
+                    placeholder="Enter your password"
+                    required 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <EyeOffIcon className="w-5 h-5 text-white/50 hover:text-white/70 transition-colors" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5 text-white/50 hover:text-white/70 transition-colors" />
+                    )}
+                  </button>
                 </div>
-                <input 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  type={showPassword ? 'text' : 'password'}
-                  className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200" 
-                  placeholder="Enter your password"
-                  required 
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="w-5 h-5 text-white/50 hover:text-white/70 transition-colors" />
-                  ) : (
-                    <EyeIcon className="w-5 h-5 text-white/50 hover:text-white/70 transition-colors" />
-                  )}
-                </button>
+                {mode === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot')
+                      setError('')
+                      setMessage('')
+                    }}
+                    className="text-sm text-purple-200 hover:text-white text-left"
+                  >
+                    Forgot password?
+                  </button>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Error/Success Messages */}
             {error && (
@@ -208,18 +295,36 @@ export default function AdminAuth() {
                   Please wait...
                 </div>
               ) : (
-                mode === 'signin' ? 'Sign In' : 'Sign Up'
+                mode === 'forgot' ? 'Send reset link' : mode === 'signin' ? 'Sign In' : 'Sign Up'
               )}
             </button>
+
+            {mode === 'signin' && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={loading || resendCooldown > 0}
+                className="w-full py-2 text-sm bg-white/10 border border-white/20 text-white/90 rounded-xl hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                {resendCooldown > 0
+                  ? `Resend available in ${resendCooldown}s`
+                  : "Didn't receive verification email? Resend"}
+              </button>
+            )}
           </form>
 
           {/* Toggle Mode */}
           <div className="mt-6 text-center">
             <button 
+              type="button"
               onClick={toggleMode} 
               className="text-white/70 hover:text-white transition-colors duration-200 text-sm"
             >
-              {mode === 'signin' ? (
+              {mode === 'forgot' ? (
+                <>
+                  <span className="text-purple-300 font-medium">Back to sign in</span>
+                </>
+              ) : mode === 'signin' ? (
                 <>
                   Don't have an account? <span className="text-purple-300 font-medium">Sign Up</span>
                 </>
@@ -240,8 +345,6 @@ export default function AdminAuth() {
         </div>
       </div>
       </main>
-      
-      <Footer />
     </div>
   )
 }

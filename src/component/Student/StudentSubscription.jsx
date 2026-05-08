@@ -2,17 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
+import { useStudentProfile, queryKeys } from '../../lib/queries';
+import { useQueryClient } from '@tanstack/react-query';
 const StudentSubscription = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
+  const queryClient = useQueryClient();
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
-  const [currentSubscription, setCurrentSubscription] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  const { data: currentSubscription, isLoading: profileLoading } = useStudentProfile({
+    enabled: userType === 'student',
+  });
 
   useEffect(() => {
     if (userType !== 'student') {
@@ -24,17 +27,12 @@ const StudentSubscription = () => {
 
   const fetchSubscriptionData = async () => {
     try {
-      const [profileResponse, plansResponse] = await Promise.all([
-        apiClient.get('/student/profile'),
-        apiClient.get('/subscription/plans')
-      ]);
-      
-      setCurrentSubscription(profileResponse);
+      const plansResponse = await apiClient.get('/subscription/plans');
       setSubscriptionPlans(plansResponse);
     } catch (error) {
       console.error('Error fetching subscription data:', error);
     } finally {
-      setLoading(false);
+      setLoadingPlans(false);
     }
   };
 
@@ -58,6 +56,7 @@ const StudentSubscription = () => {
       if (response.success) {
         alert('Subscription renewed successfully!');
         setShowPaymentModal(false);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.studentProfile });
         fetchSubscriptionData(); // Refresh data
         navigate('/student/dashboard');
       }
@@ -76,22 +75,18 @@ const StudentSubscription = () => {
 
   const isUrgent = getDaysLeft() <= 5 && getDaysLeft() > 0;
 
-  if (loading) {
+  if (loadingPlans || profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-      <Header />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Current Subscription Status */}
         <div className="mb-8">
@@ -208,8 +203,7 @@ const StudentSubscription = () => {
         )}
       </div>
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

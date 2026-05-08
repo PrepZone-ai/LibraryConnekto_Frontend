@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
 // Enhanced Icons with better styling
 const SeatIcon = ({ className = "w-6 h-6" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,10 +121,9 @@ const SeatManagement = () => {
       setLoading(true);
       await Promise.all([
         fetchLibraryStats(),
-        fetchStudents()
+        fetchStudents(),
+        fetchBookings()
       ]);
-      // After fetching students and stats, compute assignments
-      computeAssignedFromStudents();
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -156,7 +152,10 @@ const SeatManagement = () => {
   const fetchStudents = async () => {
     try {
       const response = await apiClient.get('/admin/students?order=created_at:asc&limit=1000');
-      setStudents(Array.isArray(response) ? response : []);
+      const parsedStudents = Array.isArray(response)
+        ? response
+        : (Array.isArray(response?.items) ? response.items : []);
+      setStudents(parsedStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
@@ -170,11 +169,19 @@ const SeatManagement = () => {
         setAssignedSeats([]);
         return;
       }
-      // Build deterministic assignment from student_id
+
+      // Always derive assignment from registered student codes (e.g. DAND26001),
+      // not from backend auth UUIDs. This keeps mapping deterministic.
       const taken = new Set();
       const assignments = [];
+      const bookingByAuthId = new Map(
+        bookings
+          .filter(b => ['active', 'approved', 'pending'].includes(b?.status))
+          .map(b => [String(b.student_id || ''), b])
+      );
+
       const ordered = [...students].filter(s => !!s.student_id);
-      // Sort by student_id for stable assignment
+      // Stable student-code ordering ensures repeatable seat mapping.
       ordered.sort((a, b) => String(a.student_id).localeCompare(String(b.student_id)));
       for (const s of ordered) {
         const preferred = getSeatFromStudentCode(s.student_id, totalSeats);
@@ -190,14 +197,15 @@ const SeatManagement = () => {
         }
         if (chosen) {
           taken.add(String(chosen));
+          const relatedBooking = bookingByAuthId.get(String(s.auth_user_id));
           assignments.push({
             seat_number: String(chosen),
             name: s.name || 'Student',
             student_id: s.student_id,
-            email: s.email,
-            mobile: s.mobile_no,
-            address: s.address,
-            status: 'derived'
+            email: s.email || relatedBooking?.email,
+            mobile: s.mobile_no || relatedBooking?.mobile,
+            address: s.address || relatedBooking?.address,
+            status: relatedBooking?.status || 'derived'
           });
         }
       }
@@ -272,13 +280,30 @@ const SeatManagement = () => {
 
   // Auto-assign helpers
   const extractStudentCode = (booking) => {
-    // Prefer backend field name student_id from SeatBookingResponse
-    return (
-      booking?.student_id ||
+    const direct = (
       booking?.student_code ||
       booking?.student_unique_id ||
       booking?.studentId ||
       booking?.code ||
+      ''
+    );
+
+    if (direct) return direct;
+
+    // booking.student_id can be either student code or auth UUID.
+    const bookingStudentId = booking?.student_id ? String(booking.student_id) : '';
+    if (/^[A-Za-z]+[0-9]+$/.test(bookingStudentId)) {
+      return bookingStudentId;
+    }
+
+    // If it's UUID, resolve to registered student's unique student_id.
+    const matchedStudent = students.find(s => String(s.auth_user_id) === bookingStudentId);
+    if (matchedStudent?.student_id) {
+      return matchedStudent.student_id;
+    }
+
+    return (
+      bookingStudentId ||
       ''
     );
   };
@@ -333,62 +358,6 @@ const SeatManagement = () => {
     }
 
     return handleBookingAction(booking.id, 'approved', String(finalSeat));
-  };
-
-  const autoAssignAllByStudentId = async () => {
-    if (!libraryStats.total_seats) return;
-    setActionLoading(true);
-    try {
-      // Work on a local copy of taken seats to avoid collisions during iteration
-      const taken = new Set(assignedSeats.map(b => String(b.seat_number)));
-      const totalSeats = libraryStats.total_seats;
-
-      // Consider bookings that don't have a seat yet and are pending/approved/active
-      const targets = bookings.filter(b => !b.seat_number && ['pending', 'approved', 'active'].includes(b.status));
-
-      // Stable order by student_id to keep deterministic assignment
-      targets.sort((a, b) => String(extractStudentCode(a)).localeCompare(String(extractStudentCode(b))));
-
-      for (const booking of targets) {
-        const code = extractStudentCode(booking);
-        const preferred = getSeatFromStudentCode(code, totalSeats);
-
-        // Find next available using the current taken set
-        let chosen = null;
-        if (preferred && preferred >= 1 && preferred <= totalSeats && !taken.has(String(preferred))) {
-          chosen = preferred;
-        } else {
-          // scan
-          const start = preferred && preferred >= 1 ? preferred : 1;
-          for (let i = 0; i < totalSeats; i++) {
-            const candidate = ((start - 1 + i) % totalSeats) + 1;
-            if (!taken.has(String(candidate))) {
-              chosen = candidate;
-              break;
-            }
-          }
-        }
-
-        if (chosen) {
-          // Reserve locally to avoid duplicates, then update backend
-          taken.add(String(chosen));
-          try {
-            await apiClient.put(`/booking/seat-bookings/${booking.id}`, {
-              status: booking.status === 'pending' ? 'approved' : booking.status,
-              seat_number: String(chosen)
-            });
-          } catch (e) {
-            console.error('Auto-assign failed for booking', booking.id, e);
-            // free reservation if API failed
-            taken.delete(String(chosen));
-          }
-        }
-      }
-
-      await fetchData();
-    } finally {
-      setActionLoading(false);
-    }
   };
 
   const filteredBookings = bookings.filter(booking => {
@@ -447,13 +416,6 @@ const SeatManagement = () => {
             <span>Library Seat Layout</span>
           </h2>
           <div className="flex items-center space-x-4 text-sm">
-            <button
-              onClick={autoAssignAllByStudentId}
-              disabled={actionLoading}
-              className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:from-green-400 disabled:to-emerald-500 transition-all duration-200 font-semibold shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30"
-            >
-              {actionLoading ? 'Assigning…' : 'Auto-Assign by Student ID'}
-            </button>
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-green-500 rounded"></div>
               <span className="text-white/70">Assigned</span>
@@ -465,7 +427,7 @@ const SeatManagement = () => {
           </div>
         </div>
         {assignedSeats.length === 0 && (
-          <div className="mb-4 text-sm text-white/70">No seats assigned yet. Use "Auto-Assign by Student ID" to assign automatically.</div>
+          <div className="mb-4 text-sm text-white/70">No seats assigned yet. Seats are mapped automatically from registered student IDs.</div>
         )}
         
         <div className="space-y-4">
@@ -796,30 +758,26 @@ const SeatManagement = () => {
   };
 
   useEffect(() => {
-    // Recompute when students or stats change
+    // Recompute whenever source data updates
     computeAssignedFromStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [students, libraryStats.total_seats]);
+  }, [students, bookings, libraryStats.total_seats]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white"></div>
             <p className="text-white/70 mt-4">Loading seat management...</p>
           </div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
-      
       <main className="flex-grow container mx-auto px-4 pt-24 pb-8 relative">
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -867,8 +825,6 @@ const SeatManagement = () => {
           {/* Removed bookings list per request */}
         </div>
       </main>
-
-      <Footer />
 
       {/* Booking Modal */}
       {showBookingModal && <BookingModal />}

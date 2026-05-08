@@ -43,7 +43,7 @@ class ApiClient {
   }
 
   async getHeaders(extra = {}, includeAuth = true) {
-    const headers = { 'Content-Type': 'application/json', ...extra };
+    const headers = { ...extra };
     if (includeAuth) {
       const token = getAuthToken();
       if (token) headers.Authorization = `Bearer ${token}`;
@@ -98,13 +98,28 @@ class ApiClient {
     return this.request(endpoint, { method: 'GET' }, includeAuth);
   }
   post(endpoint, body, includeAuth = true) {
-    return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) }, includeAuth);
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+    return this.request(
+      endpoint,
+      { method: 'POST', body: isFormData ? body : JSON.stringify(body), headers },
+      includeAuth
+    );
   }
   put(endpoint, body, includeAuth = true) {
-    return this.request(endpoint, { method: 'PUT', body: JSON.stringify(body) }, includeAuth);
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+    return this.request(
+      endpoint,
+      { method: 'PUT', body: isFormData ? body : JSON.stringify(body), headers },
+      includeAuth
+    );
   }
   del(endpoint, includeAuth = true) {
     return this.request(endpoint, { method: 'DELETE' }, includeAuth);
+  }
+  delete(endpoint, includeAuth = true) {
+    return this.del(endpoint, includeAuth);
   }
 
   // Anonymous methods for public endpoints

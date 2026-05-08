@@ -1,5 +1,4 @@
 title: LibraryConnekto Backend
-emoji: 🐢
 colorFrom: gray
 colorTo: green
 sdk: docker
@@ -28,6 +27,7 @@ Modern, responsive frontend for Library Connekto — a platform that connects st
   - Revenue analytics and trends
   - Referral program management and invite flow
   - Admin profile and library details (location, shifts, seats)
+  - QR scanner for attendance/seat flows
 
 - **Student Portal**
   - Dashboard with attendance actions and quick actions
@@ -35,6 +35,7 @@ Modern, responsive frontend for Library Connekto — a platform that connects st
   - Attendance history and daily attendance
   - Tasks and exams tracking
   - Messages with admin
+  - Password reset flow and email verification screens
   - Subscription management with plans and payment flow (Razorpay-ready; simulated fallback)
 
 ## Tech Stack
@@ -76,7 +77,7 @@ npm run build
 
 ```bash
 npm run preview
-``;
+```
 
 ### Lint
 
@@ -86,14 +87,9 @@ npm run lint
 
 ## Environment
 
-Create a `.env` file in project root using the template provided. Copy `env.template` to `.env` and update the values:
+Create a `.env` file in project root and set the API base URL:
 
 ```bash
-# Copy the template
-cp env.template .env
-
-# Edit .env file with your preferred editor
-# For local development:
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 
 # For production (already configured in deployment):
@@ -119,12 +115,15 @@ Library Connekto/
 │  │  ├─ Header/
 │  │  ├─ Home/
 │  │  ├─ Icons/
+│  │  ├─ Layout/                # Shared layout shell
+│  │  ├─ Payment/               # Payment confirmation/success/transfer
 │  │  ├─ Services/
 │  │  ├─ Student/               # Student portal
 │  │  └─ common/                # Shared components (Charts, Messaging)
 │  ├─ contexts/                 # Auth context
 │  ├─ lib/                      # API client
 │  ├─ services/                 # Payment service (Razorpay-ready)
+│  ├─ utils/                    # Helpers and lookups
 │  ├─ App.jsx                   # Routes
 │  ├─ index.css
 │  └─ main.jsx
@@ -141,8 +140,10 @@ Library Connekto/
 Routes are defined in `src/App.jsx` using React Router. Highlights:
 
 - Public: `/`, `/services`, `/about`, `/contact`
-- Admin: `/admin/auth`, `/admin/dashboard`, `/admin/students`, `/admin/messages`, `/admin/seats`, `/admin/analytics`, `/admin/booking-management`, `/admin/details`, `/admin/revenue-details`, `/admin/student-removal-requests`, `/admin/student-attendance/:studentId`
-- Student: `/student/login`, `/student/set-password`, `/student/dashboard`, `/student/book-seat`, `/student/messages`, `/student/attendance`, `/student/attendance-history`, `/student/profile`
+- Admin: `/admin/auth`, `/admin/reset-password`, `/admin/dashboard`, `/admin/students`, `/admin/messages`, `/admin/seats`, `/admin/analytics`, `/admin/booking-management`, `/admin/details`, `/admin/revenue-details`, `/admin/student-removal-requests`, `/admin/student-attendance/:studentId`, `/admin/scanner`
+- Student: `/student/login`, `/student/forgot-password`, `/student/set-password`, `/student/dashboard`, `/student/book-seat`, `/student/messages`, `/student/attendance`, `/student/attendance-history`, `/student/profile`
+- Auth: `/auth/verify-success`, `/auth/verify-error`
+- Payments: `/payment/:bookingId`, `/payment/success`, `/transfer/payment`
 
 ## API Client
 
@@ -185,56 +186,7 @@ Configure the base URL with `VITE_API_BASE_URL`.
 - If API calls fail locally, confirm `VITE_API_BASE_URL` and CORS settings on backend.
 - For Windows line-endings warnings from Git, you can set `git config core.autocrlf true` or keep defaults; it does not affect runtime.
 
-## Deploy to Vercel (Recommended)
 
-The easiest way to deploy Library Connekto is using Vercel. See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for detailed instructions.
-
-### Quick Vercel Deployment
-
-#### Option 1: Vercel Dashboard (Recommended)
-1. **Import to Vercel**
-   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
-   - Import your GitHub repository
-   - Framework: Vite
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-
-2. **Set Environment Variable**
-   ```
-   VITE_API_BASE_URL=https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
-   ```
-
-3. **Deploy**
-   - Click Deploy
-   - Your app will be live at the provided Vercel URL
-
-#### Option 2: Vercel CLI
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy using the provided script
-./deploy-vercel.sh        # Linux/macOS
-# or
-./deploy-vercel.ps1       # Windows PowerShell
-```
-
-#### Option 3: Manual CLI Deployment
-```bash
-# Login to Vercel
-vercel login
-
-# Set environment variable
-vercel env add VITE_API_BASE_URL
-# Enter: https://ddlsandeep7-libraryconnekto1.hf.space/api/v1
-
-# Deploy
-vercel --prod
-```
-
-## Docker Support (Optional)
-
-The project includes Docker configuration for containerized deployment if needed:
 
 ### Files
 

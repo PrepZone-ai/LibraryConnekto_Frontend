@@ -1,17 +1,27 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
-import SelectRoleModal from '../Auth/SelectRoleModal';
-import DownloadAppButton from '../common/DownloadAppButton';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  RocketIcon, AnalyticsIcon, UsersIcon, SeatIcon, MoneyIcon, 
-  SettingsIcon, ClockIcon, LightningIcon, TargetIcon, SupportIcon,
-  ShieldIcon, BellIcon, MobileIcon, ChartIcon, StarIcon, QuoteIcon
+import SelectRoleModal from '../Auth/SelectRoleModal';
+import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
+import DownloadAppButton from '../common/DownloadAppButton';
+import {
+  AnalyticsIcon,
+  BellIcon,
+  ChartIcon,
+  ClockIcon, LightningIcon,
+  MobileIcon,
+  MoneyIcon,
+  QuoteIcon,
+  RocketIcon,
+  SeatIcon,
+  SettingsIcon,
+  ShieldIcon,
+  StarIcon,
+  SupportIcon,
+  TargetIcon,
+  UsersIcon
 } from '../Icons/Icons';
 
 function Stat({ value, label }) {
@@ -27,6 +37,12 @@ export default function Home() {
   const { selectedRole, isLoggedIn, setRole } = useAuth();
   const [showRoleModal, setShowRoleModal] = useState(false);
   const navigate = useNavigate();
+  const heroImages = [
+    new URL('../../assets/Front.png', import.meta.url).href,
+    new URL('../../assets/Lib.jpeg', import.meta.url).href,
+    new URL('../../assets/Lib1.jpeg', import.meta.url).href,
+    new URL('../../assets/Lib2.jpeg', import.meta.url).href,
+  ];
   
   useEffect(() => {
     AOS.init({ 
@@ -83,7 +99,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col font-body">
-      <Header />
       <SelectRoleModal 
         open={showRoleModal} 
         onClose={handleCloseModal} 
@@ -93,7 +108,15 @@ export default function Home() {
       {/* Hero */}
       <section id="hero" className="relative isolate pt-16 md:pt-20 overflow-hidden min-h-screen flex items-start z-10">
         <div className="absolute inset-0 -z-10">
-          <img src={new URL('../../assets/Front.png', import.meta.url).href} alt="Library Connekto" className="h-full w-full object-cover" />
+          <div className="hero-carousel" aria-hidden="true">
+            <div className="hero-carousel-track">
+              {heroImages.concat(heroImages).map((src, index) => (
+                <div key={`${src}-${index}`} className="hero-carousel-slide">
+                  <img src={src} alt="" />
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="absolute inset-0 hero-overlay" />
         </div>
 
@@ -143,11 +166,6 @@ export default function Home() {
                   className="min-w-[160px] bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300"
                 />
               </div>
-              <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-2xl">
-                <Stat value="50K+" label="Active Students" />
-                <Stat value="500+" label="Partner Libraries" />
-                <Stat value="300%" label="Revenue Growth" />
-              </div>
             </div>
 
             {/* Right side - India Map with Connected Libraries */}
@@ -193,34 +211,7 @@ export default function Home() {
                     <circle cx="520" cy="420" r="50" fill="url(#indiaGrad1)" opacity="0.1" filter="url(#glow)" />
                     <circle cx="550" cy="120" r="30" fill="url(#indiaGrad3)" opacity="0.1" filter="url(#glow)" />
                     
-                    {/* India Map Outline - More Accurate Shape */}
-                    <path d="M120 80 L180 70 L240 75 L300 70 L360 75 L420 80 L480 90 L520 110 L550 140 L560 180 L550 220 L520 260 L480 300 L420 320 L360 330 L300 340 L240 335 L180 330 L120 320 L80 280 L60 240 L50 200 L60 160 L80 120 Z" 
-                          fill="#1e293b" 
-                          stroke="#64748b" 
-                          strokeWidth="1" 
-                          opacity="0.9"/>
-                    
-                    {/* State Boundaries */}
-                    <path d="M120 80 L180 70 L240 75 L300 70 L360 75 L420 80" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M420 80 L480 90 L520 110 L550 140" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M550 140 L560 180 L550 220" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M550 220 L520 260 L480 300" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M480 300 L420 320 L360 330" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M360 330 L300 340 L240 335" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M240 335 L180 330 L120 320" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M120 320 L80 280 L60 240" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M60 240 L50 200 L60 160" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    <path d="M60 160 L80 120 L120 80" stroke="#64748b" strokeWidth="0.5" fill="none" opacity="0.6"/>
-                    
-                    {/* Internal State Lines */}
-                    <path d="M200 100 L200 200" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
-                    <path d="M280 90 L280 250" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
-                    <path d="M360 95 L360 280" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
-                    <path d="M440 110 L440 300" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
-                    <path d="M120 150 L500 150" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
-                    <path d="M120 200 L520 200" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
-                    <path d="M120 250 L480 250" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
-                    <path d="M120 300 L420 300" stroke="#64748b" strokeWidth="0.3" fill="none" opacity="0.4"/>
+                      {/* India Map Outline */}
                     
                     {/* Central Library Connekto Hub */}
                     <g transform="translate(300, 220)">
@@ -380,23 +371,6 @@ export default function Home() {
                     <text x="300" y="70" textAnchor="middle" fill="#94a3b8" fontSize="12" opacity="0.8">
                       Connecting Libraries Across India
                     </text>
-                  </svg>
-                </div>
-                
-                {/* Floating elements around the map */}
-                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg animate-bounce">
-                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                </div>
-                <div className="absolute -bottom-4 -left-4 w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-lg animate-pulse">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-                  </svg>
-                </div>
-                <div className="absolute top-1/2 -left-6 w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shadow-lg animate-ping">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
                   </svg>
                 </div>
               </div>
@@ -859,15 +833,15 @@ export default function Home() {
                   description: 'Seamless data transfer from existing systems' 
                 }
               ].map((feature, index) => (
-                <div key={index} className="group relative">
-                  <div className="rounded-2xl glass p-6 text-center hover:bg-slate-800/40 transition-all duration-300 border border-slate-700/50 hover:border-purple-400/30">
+                <div key={index} className="group relative h-full">
+                  <div className="rounded-2xl glass p-6 text-center hover:bg-slate-800/40 transition-all duration-300 border border-slate-700/50 hover:border-purple-400/30 h-full min-h-[220px] flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                       {feature.icon}
                     </div>
                     <h3 className="text-lg font-bold text-white mb-2 group-hover:text-purple-300 transition-colors duration-300">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-slate-400 font-medium">
+                    <p className="text-sm text-slate-400 font-medium mt-auto">
                       {feature.description}
                     </p>
                   </div>
@@ -910,22 +884,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Stats */}
-            <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto mb-12" data-aos="fade-up" data-aos-delay="200">
-              <div className="text-center group">
-                <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">500+</div>
-                <div className="text-base sm:text-lg text-slate-300 font-semibold">Libraries Transformed</div>
-              </div>
-              <div className="text-center group">
-                <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">40%</div>
-                <div className="text-base sm:text-lg text-slate-300 font-semibold">Average Revenue Increase</div>
-              </div>
-              <div className="text-center group">
-                <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text group-hover:scale-110 transition-transform duration-300 mb-2">4.9/5</div>
-                <div className="text-base sm:text-lg text-slate-300 font-semibold">Customer Satisfaction</div>
-              </div>
-            </div>
-
             {/* Trust Indicators */}
             <div className="text-center" data-aos="fade-up" data-aos-delay="250">
               <p className="text-slate-400 font-semibold mb-4 text-lg">Trusted by library owners across India</p>
@@ -935,15 +893,11 @@ export default function Home() {
                     <StarIcon key={i} className="w-6 h-6 text-yellow-400" />
                   ))}
                 </div>
-                <span className="text-slate-300 font-semibold text-lg">4.9/5 from 500+ reviews</span>
               </div>
             </div>
           </div>
         </div>
       </section>
-
-
-      <Footer />
     </div>
   );
 }

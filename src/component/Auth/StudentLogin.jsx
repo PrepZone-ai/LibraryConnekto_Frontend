@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import Header from '../Header/Header'
-import Footer from '../Footer/Footer'
 
 // Icons
 const UserIcon = ({ className = "w-6 h-6" }) => (
@@ -87,8 +85,6 @@ export default function StudentLogin() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      
       <main className="flex-grow relative flex items-center justify-center px-4 pt-20 pb-8 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 -z-10">
@@ -207,7 +203,15 @@ export default function StudentLogin() {
 
           {/* Additional Links */}
           <div className="mt-6 text-center space-y-2">
+            <button
+              type="button"
+              onClick={() => navigate('/student/forgot-password')}
+              className="text-white/70 hover:text-white transition-colors duration-200 text-sm block w-full"
+            >
+              Forgot password?
+            </button>
             <button 
+              type="button"
               onClick={() => navigate('/student/set-password')}
               className="text-white/70 hover:text-white transition-colors duration-200 text-sm block w-full"
             >
@@ -230,8 +234,6 @@ export default function StudentLogin() {
         </div>
       </div>
       </main>
-      
-      <Footer />
     </div>
   )
 }

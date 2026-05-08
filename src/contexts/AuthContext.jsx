@@ -71,7 +71,12 @@ export const AuthProvider = ({ children }) => {
         endpoint = '/auth/admin/signup';
         response = await apiClient.post(endpoint, { email, password });
         // For signup, we don't set tokens yet, just return success
-        return { success: true, message: 'Signup successful! Please verify your email.' };
+        return {
+          success: true,
+          message: response.message || 'Signup successful. Verification email has been queued.',
+          emailDeliveryStatus: response.email_delivery_status || 'queued',
+          emailDeliveryId: response.email_delivery_id || null,
+        };
       } else {
         endpoint = userType === 'admin' ? '/auth/admin/signin' : '/auth/student/signin';
         response = await apiClient.post(endpoint, { email, password });
@@ -133,6 +138,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resendAdminVerification = async (email) => {
+    try {
+      const response = await apiClient.postAnonymous('/auth/admin/resend-verification', { email });
+      return {
+        success: true,
+        message: response?.message || 'Verification email re-queued.',
+      };
+    } catch (error) {
+      let retryAfterSeconds = null;
+      let message = error.message || 'Could not resend verification email.';
+      try {
+        const parsed = JSON.parse(error.message);
+        if (parsed && typeof parsed === 'object') {
+          message = parsed.message || message;
+          if (parsed.retry_after_seconds != null) {
+            retryAfterSeconds = Number(parsed.retry_after_seconds);
+          }
+        }
+      } catch (_) {}
+      return { success: false, error: message, retryAfterSeconds };
+    }
+  };
+
   const logout = () => {
     removeAuthToken();
     setUser(null);
@@ -159,6 +187,7 @@ export const AuthProvider = ({ children }) => {
     userType,
     selectedRole,
     login,
+    resendAdminVerification,
     logout,
     setRole,
     clearRole,

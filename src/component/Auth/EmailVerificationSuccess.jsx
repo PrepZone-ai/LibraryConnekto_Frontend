@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
-import Header from '../Header/Header'
-import Footer from '../Footer/Footer'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 export default function EmailVerificationSuccess() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState('Email verified successfully! You can now sign in.')
   const [countdown, setCountdown] = useState(5)
+  const [redirectPath, setRedirectPath] = useState('/admin/auth')
 
   useEffect(() => {
     const urlMessage = searchParams.get('message')
     if (urlMessage) {
-      setMessage(decodeURIComponent(urlMessage))
+      const decodedMessage = decodeURIComponent(urlMessage)
+      setMessage(decodedMessage)
+      setRedirectPath(`/admin/auth?message=${encodeURIComponent(decodedMessage)}`)
     } else {
-      setMessage('Email verified successfully! You can now sign in.')
+      setRedirectPath('/admin/auth?message=' + encodeURIComponent('Email verified successfully! You can now sign in.'))
     }
   }, [searchParams])
 
@@ -22,7 +23,7 @@ export default function EmailVerificationSuccess() {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          navigate('/admin/auth')
+          navigate(redirectPath)
           return 0
         }
         return prev - 1
@@ -30,12 +31,10 @@ export default function EmailVerificationSuccess() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [navigate])
+  }, [navigate, redirectPath])
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
-      
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 text-center">
           {/* Success Icon */}
@@ -63,7 +62,7 @@ export default function EmailVerificationSuccess() {
           {/* Action Buttons */}
           <div className="space-y-3">
             <button
-              onClick={() => navigate('/admin/auth')}
+              onClick={() => navigate(redirectPath)}
               className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
             >
               Sign In Now
@@ -78,8 +77,6 @@ export default function EmailVerificationSuccess() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   )
 }

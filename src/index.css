@@ -88,6 +88,11 @@ body {
   100% { background-position: 200% 0; }
 }
 
+@keyframes hero-marquee {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -130,6 +135,32 @@ body {
 .hero-overlay {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(88, 28, 135, 0.8) 60%, rgba(15, 23, 42, 0.95) 100%);
   z-index: 1;
+}
+
+.hero-carousel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.hero-carousel-track {
+  display: flex;
+  height: 100%;
+  width: max-content;
+  animation: hero-marquee 40s linear infinite;
+}
+
+.hero-carousel-slide {
+  flex: 0 0 auto;
+  height: 100%;
+  width: min(55vw, 560px);
+}
+
+.hero-carousel-slide img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  filter: saturate(1.1) contrast(1.05);
 }
 
 /* Ensure hero text content is always visible */

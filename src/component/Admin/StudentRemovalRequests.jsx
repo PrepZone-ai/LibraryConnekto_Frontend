@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
 const StudentRemovalRequests = () => {
   const [removalRequests, setRemovalRequests] = useState([]);
   const [stats, setStats] = useState({
@@ -10,6 +7,7 @@ const StudentRemovalRequests = () => {
     pending_requests: 0,
     approved_requests: 0,
     rejected_requests: 0,
+    cash_received_requests: 0,
     overdue_students: 0
   });
   const [loading, setLoading] = useState(true);
@@ -18,6 +16,11 @@ const StudentRemovalRequests = () => {
   const [showModal, setShowModal] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [removalModalStep, setRemovalModalStep] = useState('review');
+  const [extendPlans, setExtendPlans] = useState([]);
+  const [cashPlanId, setCashPlanId] = useState('');
+  const [cashAmount, setCashAmount] = useState('');
+  const [loadingPlans, setLoadingPlans] = useState(false);
 
   useEffect(() => {
     fetchRemovalRequests();
@@ -40,23 +43,50 @@ const StudentRemovalRequests = () => {
   const fetchStats = async () => {
     try {
       const response = await apiClient.get('/student-removal/stats');
-      setStats(response);
+      setStats({
+        ...response,
+        cash_received_requests: response.cash_received_requests ?? 0,
+      });
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
   };
 
-  const handleRequestAction = async (requestId, action) => {
+  const fetchExtendPlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const p = await apiClient.get('/admin/subscription-plans');
+      const list = Array.isArray(p) ? p : (p?.items ?? []);
+      setExtendPlans(list);
+      if (list.length) {
+        const first = list[0];
+        setCashPlanId(String(first.id));
+        const amt = first.discounted_amount ?? first.amount;
+        setCashAmount(amt != null ? String(amt) : '');
+      }
+    } catch (e) {
+      console.error('Error loading plans:', e);
+      setExtendPlans([]);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  const handleRequestAction = async (requestId, action, extra = {}) => {
     try {
       setProcessing(true);
       await apiClient.put(`/student-removal/requests/${requestId}`, {
         status: action,
-        admin_notes: adminNotes
+        admin_notes: adminNotes,
+        ...extra,
       });
       
       setShowModal(false);
       setAdminNotes('');
       setSelectedRequest(null);
+      setRemovalModalStep('review');
+      setCashPlanId('');
+      setCashAmount('');
       fetchRemovalRequests();
       fetchStats();
       
@@ -67,6 +97,22 @@ const StudentRemovalRequests = () => {
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleRecordCash = async () => {
+    if (!selectedRequest || !cashPlanId) {
+      alert('Select a subscription plan.');
+      return;
+    }
+    const amt = cashAmount.trim() ? parseFloat(cashAmount) : undefined;
+    if (cashAmount.trim() && Number.isNaN(amt)) {
+      alert('Enter a valid amount.');
+      return;
+    }
+    await handleRequestAction(selectedRequest.id, 'cash_received', {
+      plan_id: cashPlanId,
+      amount: amt,
+    });
   };
 
   const handleRestoreStudent = async (studentId) => {
@@ -92,7 +138,16 @@ const StudentRemovalRequests = () => {
 
   const openModal = (request) => {
     setSelectedRequest(request);
+    setRemovalModalStep('review');
+    setCashPlanId('');
+    setCashAmount('');
+    setExtendPlans([]);
     setShowModal(true);
+  };
+
+  const goToCashStep = async () => {
+    setRemovalModalStep('cash');
+    await fetchExtendPlans();
   };
 
   const getStatusColor = (status) => {
@@ -100,6 +155,7 @@ const StudentRemovalRequests = () => {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'approved': return 'bg-red-100 text-red-800';
       case 'rejected': return 'bg-green-100 text-green-800';
+      case 'cash_received': return 'bg-emerald-100 text-emerald-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -109,13 +165,13 @@ const StudentRemovalRequests = () => {
       case 'pending': return '⏳';
       case 'approved': return '✅';
       case 'rejected': return '❌';
+      case 'cash_received': return '💵';
       default: return '❓';
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
       <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
@@ -125,7 +181,7 @@ const StudentRemovalRequests = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500/30 to-cyan-500/30">
@@ -176,6 +232,18 @@ const StudentRemovalRequests = () => {
 
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
               <div className="flex items-center">
+                <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-500/30 to-teal-500/30">
+                  <span className="text-2xl">💵</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-white/70">Cash renewals</p>
+                  <p className="text-2xl font-bold text-emerald-300">{stats.cash_received_requests ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+              <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-gradient-to-r from-orange-500/30 to-amber-500/30">
                   <span className="text-2xl">⚠️</span>
                 </div>
@@ -201,6 +269,7 @@ const StudentRemovalRequests = () => {
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
+                  <option value="cash_received">Cash received</option>
                 </select>
                 <button
                   onClick={fetchRemovalRequests}
@@ -277,6 +346,8 @@ const StudentRemovalRequests = () => {
                                 🔄 Restore
                               </button>
                             </div>
+                          ) : request.status === 'cash_received' ? (
+                            <span className="text-emerald-300/90">Renewed (cash)</span>
                           ) : (
                             <span className="text-white/50">Processed</span>
                           )}
@@ -295,8 +366,15 @@ const StudentRemovalRequests = () => {
               <div className="bg-slate-800 border border-white/20 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-semibold text-white">Review Removal Request</h3>
-                    <button onClick={() => setShowModal(false)} className="text-white/60 hover:text-white">✕</button>
+                    <h3 className="text-xl font-semibold text-white">
+                      {removalModalStep === 'cash' ? 'Record cash renewal' : 'Review Removal Request'}
+                    </h3>
+                    <button
+                      onClick={() => { setShowModal(false); setRemovalModalStep('review'); }}
+                      className="text-white/60 hover:text-white"
+                    >
+                      ✕
+                    </button>
                   </div>
 
                   <div className="space-y-4">
@@ -314,6 +392,51 @@ const StudentRemovalRequests = () => {
                       <p className="text-white/80"><strong>Reason:</strong> {selectedRequest.reason}</p>
                     </div>
 
+                    {removalModalStep === 'cash' && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl space-y-3">
+                        <p className="text-sm text-emerald-100">
+                          Choose the plan the student paid for. This extends their subscription and adds the amount to your revenue (cash).
+                        </p>
+                        {loadingPlans ? (
+                          <p className="text-white/70 text-sm">Loading plans…</p>
+                        ) : extendPlans.length === 0 ? (
+                          <p className="text-amber-200 text-sm">No subscription plans found. Create plans under subscription settings first.</p>
+                        ) : (
+                          <>
+                            <label className="block text-sm font-medium text-white/80">Plan</label>
+                            <select
+                              value={cashPlanId}
+                              onChange={(e) => {
+                                const id = e.target.value;
+                                setCashPlanId(id);
+                                const pl = extendPlans.find((x) => String(x.id) === id);
+                                if (pl) {
+                                  const amt = pl.discounted_amount ?? pl.amount;
+                                  setCashAmount(amt != null ? String(amt) : '');
+                                }
+                              }}
+                              className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg"
+                            >
+                              {extendPlans.map((pl) => (
+                                <option key={pl.id} value={pl.id} className="bg-slate-800">
+                                  {pl.months} month(s) — ₹{pl.discounted_amount ?? pl.amount}
+                                </option>
+                              ))}
+                            </select>
+                            <label className="block text-sm font-medium text-white/80">Amount received (₹)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={cashAmount}
+                              onChange={(e) => setCashAmount(e.target.value)}
+                              className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg"
+                            />
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-sm font-medium text-white/80 mb-2">Admin Notes (Optional)</label>
                       <textarea
@@ -326,22 +449,51 @@ const StudentRemovalRequests = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end space-x-4 mt-6">
-                    <button onClick={() => setShowModal(false)} className="px-4 py-2 text-white/70 hover:text-white transition-colors">Cancel</button>
-                    <button
-                      onClick={() => handleRequestAction(selectedRequest.id, 'rejected')}
-                      disabled={processing}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                    >
-                      {processing ? 'Processing...' : '❌ Reject'}
-                    </button>
-                    <button
-                      onClick={() => handleRequestAction(selectedRequest.id, 'approved')}
-                      disabled={processing}
-                      className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50"
-                    >
-                      {processing ? 'Processing...' : '✅ Approve Removal'}
-                    </button>
+                  <div className="flex flex-wrap items-center justify-end gap-3 mt-6">
+                    <button onClick={() => { setShowModal(false); setRemovalModalStep('review'); }} className="px-4 py-2 text-white/70 hover:text-white transition-colors">Close</button>
+                    {removalModalStep === 'review' ? (
+                      <>
+                        <button
+                          onClick={() => handleRequestAction(selectedRequest.id, 'rejected')}
+                          disabled={processing}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                        >
+                          {processing ? '…' : 'Dismiss (keep student)'}
+                        </button>
+                        <button
+                          onClick={goToCashStep}
+                          disabled={processing}
+                          className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
+                        >
+                          💵 Received cash — extend
+                        </button>
+                        <button
+                          onClick={() => handleRequestAction(selectedRequest.id, 'approved')}
+                          disabled={processing}
+                          className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50"
+                        >
+                          {processing ? '…' : 'Approve removal'}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setRemovalModalStep('review')}
+                          className="px-4 py-2 text-white/80 hover:text-white"
+                        >
+                          ← Back
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRecordCash}
+                          disabled={processing || loadingPlans || !extendPlans.length}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          {processing ? 'Saving…' : 'Confirm cash & extend'}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -349,8 +501,7 @@ const StudentRemovalRequests = () => {
           )}
         </div>
       </main>
-      <Footer />
-    </div>
+      </div>
   );
 };
 

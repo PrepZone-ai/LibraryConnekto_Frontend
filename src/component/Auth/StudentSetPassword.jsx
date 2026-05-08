@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { apiClient } from '../../lib/api'
-import Header from '../Header/Header'
-import Footer from '../Footer/Footer'
 
 // Icons
 const LockIcon = ({ className = "w-6 h-6" }) => (
@@ -36,23 +34,14 @@ const UserIcon = ({ className = "w-6 h-6" }) => (
   </svg>
 )
 
-function useQuery() {
-  const [params, setParams] = useState(new URLSearchParams(window.location.search))
-  useEffect(() => {
-    const handler = () => setParams(new URLSearchParams(window.location.search))
-    window.addEventListener('popstate', handler)
-    return () => window.removeEventListener('popstate', handler)
-  }, [])
-  return params
-}
-
 export default function StudentSetPassword() {
   const navigate = useNavigate()
   const location = useLocation()
-  const query = useQuery()
-  
-  // Get student ID from navigation state or URL query parameter
-  const studentId = location.state?.studentId || query.get('studentId') || ''
+  const [searchParams] = useSearchParams()
+
+  const token = (searchParams.get('token') || '').trim()
+  const studentId = location.state?.studentId || searchParams.get('studentId') || ''
+  const isTokenReset = Boolean(token)
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -67,8 +56,8 @@ export default function StudentSetPassword() {
     setError('')
     setMessage('')
 
-    if (!studentId) {
-      setError('Missing student ID')
+    if (!isTokenReset && !studentId) {
+      setError('Missing student ID or reset link. Open the link from your email or sign in first.')
       return
     }
     if (!newPassword || newPassword.length < 6) {
@@ -82,22 +71,20 @@ export default function StudentSetPassword() {
 
     setLoading(true)
     try {
-      // Mobile uses POST /student/set-password with { student_id, new_password }
-      const res = await apiClient.post('/student/set-password', {
-        student_id: studentId,
-        new_password: newPassword
-      })
-      // Some backends return {success: boolean} or {message: string}
+      const body = isTokenReset
+        ? { token, new_password: newPassword }
+        : { student_id: studentId, new_password: newPassword }
+      const res = await apiClient.postAnonymous('/student/set-password', body)
       if (res && (res.success || res.message)) {
-        setMessage('Password set successfully. Redirecting to dashboard...')
-        setTimeout(() => {
-          navigate('/student/dashboard')
-        }, 2000)
+        setMessage(
+          isTokenReset
+            ? 'Password updated. Redirecting to sign in…'
+            : 'Password set successfully. Redirecting to sign in…'
+        )
+        setTimeout(() => navigate('/student/login', { replace: true }), 1500)
       } else {
-        setMessage('Password set. Redirecting to dashboard...')
-        setTimeout(() => {
-          navigate('/student/dashboard')
-        }, 2000)
+        setMessage('Password saved. Redirecting to sign in…')
+        setTimeout(() => navigate('/student/login', { replace: true }), 1500)
       }
     } catch (err) {
       setError(err.message || 'Failed to set password')
@@ -118,8 +105,6 @@ export default function StudentSetPassword() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      
       <main className="flex-grow relative flex items-center justify-center px-4 pt-20 pb-8 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 -z-10">
@@ -151,12 +136,14 @@ export default function StudentSetPassword() {
                   />
                 </div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              Set Your Password
+              {isTokenReset ? 'Reset your password' : 'Set Your Password'}
             </h1>
             <p className="text-white/70 mb-4">
-              Create a secure password for your account
+              {isTokenReset
+                ? 'Choose a new password for your student account'
+                : 'Create a secure password for your account'}
             </p>
-            {studentId && (
+            {studentId && !isTokenReset && (
               <div className="inline-flex items-center px-4 py-2 bg-white/10 rounded-lg border border-white/20">
                 <UserIcon className="w-4 h-4 text-white/70 mr-2" />
                 <span className="text-white/90 font-mono text-sm">{studentId}</span>
@@ -292,7 +279,7 @@ export default function StudentSetPassword() {
                   Setting password...
                 </div>
               ) : (
-                'Set Password'
+                isTokenReset ? 'Update password' : 'Set Password'
               )}
             </button>
           </form>
@@ -316,8 +303,6 @@ export default function StudentSetPassword() {
         </div>
       </div>
       </main>
-      
-      <Footer />
     </div>
   )
 }

@@ -1,50 +1,40 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
 import Messaging from '../common/Messaging';
+import { useStudentProfile } from '../../lib/queries';
 
 const StudentMessages = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
-  const [adminInfo, setAdminInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
   const messagingRef = useRef(null);
+
+  const { data: studentProfile, isLoading: profileLoading } = useStudentProfile({
+    enabled: userType === 'student',
+  });
 
   useEffect(() => {
     if (userType !== 'student') {
       navigate('/student/login');
       return;
     }
-    fetchAdminInfo();
   }, [userType, navigate]);
 
-  const fetchAdminInfo = async () => {
-    try {
-      // Get student profile which includes admin/library information
-      const response = await apiClient.get('/student/profile');
-      
-      // Extract admin info from student profile
-      if (response) {
-        setAdminInfo({
-          user_id: response.admin_id,
-          admin_name: response.library_name ? `${response.library_name} Admin` : 'Library Admin',
-          library_name: response.library_name || 'Library'
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching admin info:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const adminInfo = useMemo(() => {
+    if (!studentProfile) return null;
+    return {
+      user_id: studentProfile.admin_id,
+      admin_name: studentProfile.library_name
+        ? `${studentProfile.library_name} Admin`
+        : 'Library Admin',
+      library_name: studentProfile.library_name || 'Library',
+    };
+  }, [studentProfile]);
 
 
-  if (loading) {
+  if (profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white"></div>
@@ -57,8 +47,6 @@ const StudentMessages = () => {
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex flex-col overflow-hidden">
-      <Header />
-      
       {/* Main Chat Interface - Full Height */}
       <div className="flex-1 flex flex-col pt-20 px-4 sm:px-6 lg:px-8 min-h-0">
         <div className="flex-1 max-w-7xl mx-auto w-full min-h-0">

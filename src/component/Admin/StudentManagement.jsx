@@ -2,9 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
 const StudentManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,6 +31,23 @@ const StudentManagement = () => {
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [autoDateMode, setAutoDateMode] = useState(true); // when true, end date auto-follows plan duration
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [extendTarget, setExtendTarget] = useState(null);
+  const [extendPlanId, setExtendPlanId] = useState('');
+  const [extendAmount, setExtendAmount] = useState('');
+  const [extendSubmitting, setExtendSubmitting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editStudent, setEditStudent] = useState({
+    name: '',
+    email: '',
+    mobile_no: '',
+    address: '',
+    subscription_start: '',
+    subscription_end: '',
+    is_shift_student: false,
+    shift_time: ''
+  });
 
   // Derived: plan duration and days left based on selected dates
   const { totalDays, daysLeft } = useMemo(() => {
@@ -69,7 +83,7 @@ const StudentManagement = () => {
     try {
       setLoadingPlans(true);
       const p = await apiClient.get('/admin/subscription-plans');
-      setPlans(Array.isArray(p) ? p : []);
+      setPlans(Array.isArray(p) ? p : (p?.items ?? []));
     } catch (_) {
       setPlans([]);
     } finally {
@@ -152,12 +166,21 @@ const StudentManagement = () => {
     }
   }, [location?.state]);
 
+  const normalizeStudentsResponse = (response) => {
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.students)) return response.students;
+    if (Array.isArray(response?.items)) return response.items;
+    if (Array.isArray(response?.data)) return response.data;
+    return [];
+  };
+
   const fetchStudents = async () => {
     try {
       const response = await apiClient.get('/admin/students');
-      setStudents(response);
+      setStudents(normalizeStudentsResponse(response));
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -412,6 +435,48 @@ const StudentManagement = () => {
     }
   };
 
+  const openExtendModal = (student) => {
+    setExtendTarget(student);
+    setShowExtendModal(true);
+    const first = plans[0];
+    if (first) {
+      setExtendPlanId(String(first.id));
+      const amt = first.discounted_amount ?? first.amount;
+      setExtendAmount(amt != null ? String(amt) : '');
+    } else {
+      setExtendPlanId('');
+      setExtendAmount('');
+    }
+  };
+
+  const submitExtendSubscription = async () => {
+    if (!extendTarget || !extendPlanId) {
+      alert('Select a plan.');
+      return;
+    }
+    const amt = extendAmount.trim() ? parseFloat(extendAmount) : undefined;
+    if (extendAmount.trim() && Number.isNaN(amt)) {
+      alert('Enter a valid amount.');
+      return;
+    }
+    try {
+      setExtendSubmitting(true);
+      await apiClient.post(`/admin/students/${extendTarget.id}/extend-subscription`, {
+        plan_id: extendPlanId,
+        amount: amt,
+      });
+      setShowExtendModal(false);
+      setExtendTarget(null);
+      fetchStudents();
+      alert('Subscription extended and revenue recorded.');
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to extend subscription.');
+    } finally {
+      setExtendSubmitting(false);
+    }
+  };
+
   const handleDeleteStudent = async (student) => {
     if (window.confirm(`Are you sure you want to delete ${student.name}? This action cannot be undone.`)) {
       try {
@@ -425,7 +490,54 @@ const StudentManagement = () => {
     }
   };
 
-  const filteredStudents = students.filter(student => {
+  const openEditModal = (student) => {
+    const toDateInput = (v) => {
+      if (!v) return '';
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toISOString().slice(0, 10);
+    };
+    setEditTarget(student);
+    setEditStudent({
+      name: student?.name || '',
+      email: student?.email || '',
+      mobile_no: student?.mobile_no || '',
+      address: student?.address || '',
+      subscription_start: toDateInput(student?.subscription_start),
+      subscription_end: toDateInput(student?.subscription_end),
+      is_shift_student: !!student?.is_shift_student,
+      shift_time: student?.shift_time || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const submitEditStudent = async (e) => {
+    e.preventDefault();
+    if (!editTarget?.id) return;
+    try {
+      const toISODate = (val) => (val ? `${String(val).slice(0, 10)}T00:00:00Z` : undefined);
+      const payload = {
+        name: (editStudent.name || '').trim(),
+        email: (editStudent.email || '').trim().toLowerCase(),
+        mobile_no: (editStudent.mobile_no || '').trim(),
+        address: (editStudent.address || '').trim(),
+        subscription_start: toISODate(editStudent.subscription_start),
+        subscription_end: toISODate(editStudent.subscription_end),
+        is_shift_student: !!editStudent.is_shift_student,
+        shift_time: editStudent.is_shift_student ? (editStudent.shift_time || '').trim() : null,
+      };
+      await apiClient.put(`/admin/students/${editTarget.id}`, payload);
+      setShowEditModal(false);
+      setEditTarget(null);
+      await fetchStudents();
+      alert('Student updated successfully.');
+    } catch (error) {
+      console.error('Error updating student:', error);
+      alert(error?.message || 'Failed to update student.');
+    }
+  };
+
+  const filteredStudents = (Array.isArray(students) ? students : []).filter(student => {
     // Filter out inactive/deleted students
     if (student.status === 'inactive') {
       return false;
@@ -452,22 +564,18 @@ const StudentManagement = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white"></div>
             <p className="text-white/70 mt-4">Loading students...</p>
           </div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
-      
       <main className="flex-grow container mx-auto px-4 pt-24 pb-8 relative">
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -477,14 +585,14 @@ const StudentManagement = () => {
         
           <div className="max-w-7xl mx-auto relative">
           {/* Header */}
-          <div className="flex justify-end items-center mb-12">
+          <div className="flex justify-end items-center mb-8">
             <div className="flex gap-3">
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transform hover:scale-105"
+                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transform hover:scale-105"
               >
                 <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                   Add Single
@@ -492,10 +600,10 @@ const StudentManagement = () => {
               </button>
               <button
                 onClick={() => setShowBulkModal(true)}
-                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transform hover:scale-105"
+                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm font-semibold rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transform hover:scale-105"
               >
                 <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
                   </svg>
                   Bulk Import
@@ -505,9 +613,9 @@ const StudentManagement = () => {
           </div>
 
           {/* Filters */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-8 border border-white/20 shadow-xl">
-            <h3 className="text-xl font-semibold text-white mb-6">Search & Filter</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20 shadow-xl">
+            <h3 className="text-lg font-semibold text-white mb-4">Search & Filter</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-3">Search Students</label>
                 <input
@@ -620,15 +728,22 @@ const StudentManagement = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
-                            onClick={() => navigate(`/admin/students/${student.id}/edit`)}
+                            type="button"
+                            onClick={() => openExtendModal(student)}
+                            className="px-3 py-1 bg-teal-500/20 text-teal-200 rounded-lg hover:bg-teal-500/30 transition-all duration-200 border border-teal-500/30"
+                          >
+                            Extend (cash)
+                          </button>
+                          <button
+                            onClick={() => openEditModal(student)}
                             className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all duration-200 border border-blue-500/30"
                           >
                             Edit
                           </button>
                           <button
-                            onClick={() => navigate(`/admin/students/${student.id}/attendance`)}
+                            onClick={() => navigate(`/admin/student-attendance/${student.id}`)}
                             className="px-3 py-1 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-all duration-200 border border-green-500/30"
                           >
                             Attendance
@@ -839,6 +954,141 @@ const StudentManagement = () => {
       )}
 
       {/* Bulk Import Modal */}
+      {showEditModal && editTarget && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 w-96 shadow-2xl rounded-2xl bg-slate-800 border border-white/20">
+            <h3 className="text-xl font-semibold text-white mb-6">Edit Student</h3>
+            <form onSubmit={submitEditStudent} className="space-y-4">
+              <input
+                type="text"
+                required
+                value={editStudent.name}
+                onChange={(e) => setEditStudent({ ...editStudent, name: e.target.value })}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                placeholder="Name"
+              />
+              <input
+                type="email"
+                required
+                value={editStudent.email}
+                onChange={(e) => setEditStudent({ ...editStudent, email: e.target.value })}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                placeholder="Email"
+              />
+              <input
+                type="tel"
+                required
+                value={editStudent.mobile_no}
+                onChange={(e) => setEditStudent({ ...editStudent, mobile_no: e.target.value })}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                placeholder="Mobile Number"
+              />
+              <textarea
+                value={editStudent.address}
+                onChange={(e) => setEditStudent({ ...editStudent, address: e.target.value })}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white resize-none"
+                rows="2"
+                placeholder="Address"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  value={editStudent.subscription_start}
+                  onChange={(e) => setEditStudent({ ...editStudent, subscription_start: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                />
+                <input
+                  type="date"
+                  value={editStudent.subscription_end}
+                  onChange={(e) => setEditStudent({ ...editStudent, subscription_end: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setEditTarget(null); }}
+                  className="px-5 py-2.5 text-sm font-medium text-white/70 bg-white/10 rounded-xl border border-white/20"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showExtendModal && extendTarget && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-white mb-2">Extend subscription (cash / desk)</h3>
+            <p className="text-sm text-white/70 mb-4">
+              {extendTarget.name} — record the plan and amount. This extends their end date and counts in revenue.
+            </p>
+            {loadingPlans ? (
+              <p className="text-white/60 text-sm mb-4">Loading plans…</p>
+            ) : plans.length === 0 ? (
+              <p className="text-amber-200 text-sm mb-4">No plans configured. Add subscription plans first.</p>
+            ) : (
+              <div className="space-y-3 mb-4">
+                <label className="block text-sm text-white/80">Plan</label>
+                <select
+                  value={extendPlanId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setExtendPlanId(id);
+                    const pl = plans.find((x) => String(x.id) === id);
+                    if (pl) {
+                      const amt = pl.discounted_amount ?? pl.amount;
+                      setExtendAmount(amt != null ? String(amt) : '');
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg"
+                >
+                  {plans.map((pl) => (
+                    <option key={pl.id} value={pl.id} className="bg-slate-800">
+                      {pl.months} month(s) — ₹{pl.discounted_amount ?? pl.amount}
+                    </option>
+                  ))}
+                </select>
+                <label className="block text-sm text-white/80">Amount (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={extendAmount}
+                  onChange={(e) => setExtendAmount(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg"
+                />
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowExtendModal(false); setExtendTarget(null); }}
+                className="px-4 py-2 text-white/80 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitExtendSubscription}
+                disabled={extendSubmitting || !plans.length || !extendPlanId}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              >
+                {extendSubmitting ? 'Saving…' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showBulkModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
           <div className="relative top-16 mx-auto p-5 w-[40rem] max-w-[95vw] shadow-2xl rounded-2xl bg-slate-800 border border-white/20">
@@ -850,8 +1100,11 @@ const StudentManagement = () => {
                 aria-label="Close"
               >✖</button>
             </div>
-            <div className="text-white/80 text-sm mb-4">
-              Expected headers: <code className="font-mono">name,email,mobile_no,address,subscription_start,subscription_end,is_shift_student,shift_time</code>
+            <div className="mb-4 rounded-xl border border-white/15 bg-white/5 p-3">
+              <p className="text-white/85 text-sm font-medium mb-2">Expected headers:</p>
+              <code className="block font-mono text-xs text-white/75 whitespace-normal break-all leading-6">
+                name,email,mobile_no,address,subscription_start,subscription_end,is_shift_student,shift_time
+              </code>
             </div>
             <form onSubmit={submitBulkImport} className="space-y-4">
               <div className="flex items-center justify-between gap-3">
@@ -893,8 +1146,7 @@ const StudentManagement = () => {
         </div>
       )}
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

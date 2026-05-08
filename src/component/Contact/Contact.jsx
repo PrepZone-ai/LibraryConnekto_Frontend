@@ -1,13 +1,9 @@
-import { useEffect, useState } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
+import { useEffect, useState } from 'react';
 import DownloadAppButton from '../common/DownloadAppButton';
-import { 
-  RocketIcon, UsersIcon, TargetIcon, ShieldIcon, 
-  ClockIcon, LightningIcon, StarIcon, QuoteIcon,
-  ChartIcon, SupportIcon, BellIcon, MobileIcon
+import {
+    SupportIcon
 } from '../Icons/Icons';
 
 // Additional icons for Contact page
@@ -35,34 +31,12 @@ const VideoIcon = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-const LocationIcon = ({ className = "w-6 h-6" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
 
 const CheckIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
-
-function StatCard({ icon: Icon, value, label, delay = 0 }) {
-  return (
-    <div 
-      className="text-center group"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
-      <div className="p-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl w-fit mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-        <Icon className="w-8 h-8 text-purple-400" />
-      </div>
-      <div className="text-4xl md:text-5xl font-black gradient-text mb-2">{value}</div>
-      <div className="text-slate-300 font-medium">{label}</div>
-    </div>
-  );
-}
 
 function ContactMethodCard({ icon: Icon, title, status, description, contact, timing, note, comingSoon = false, delay = 0 }) {
   return (
@@ -108,43 +82,6 @@ function ContactMethodCard({ icon: Icon, title, status, description, contact, ti
   );
 }
 
-function OfficeCard({ city, address, phone, email, hours, delay = 0 }) {
-  return (
-    <div 
-      className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
-      <div className="flex items-center gap-4 mb-6">
-        <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
-          <LocationIcon className="w-8 h-8 text-purple-400" />
-        </div>
-        <h3 className="text-2xl font-bold text-white group-hover:text-purple-300 transition-colors">
-          {city}
-        </h3>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="flex items-start gap-3">
-          <LocationIcon className="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" />
-          <span className="text-slate-300">{address}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <PhoneIcon className="w-5 h-5 text-purple-400 flex-shrink-0" />
-          <span className="text-slate-300">{phone}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <EmailIcon className="w-5 h-5 text-purple-400 flex-shrink-0" />
-          <span className="text-slate-300">{email}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <ClockIcon className="w-5 h-5 text-purple-400 flex-shrink-0" />
-          <span className="text-slate-300">{hours}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function FAQItem({ question, answer, delay = 0 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -204,12 +141,6 @@ export default function Contact() {
     console.log('Form submitted:', formData);
   };
 
-  const stats = [
-    { icon: UsersIcon, value: "500+", label: "Libraries Served" },
-    { icon: ClockIcon, value: "24hr", label: "Response Time" },
-    { icon: StarIcon, value: "99%", label: "Satisfaction Rate" }
-  ];
-
   const contactMethods = [
     {
       icon: EmailIcon,
@@ -251,46 +182,27 @@ export default function Contact() {
     }
   ];
 
-  const offices = [
-    {
-      city: "Lucknow",
-      address: "Tiwariganj uttardhona Lucknow - 226028",
-      phone: "+91 98765 43210",
-      email: "support@libraryconnekto.me",
-      hours: "Mon-Fri: 9 AM - 6 PM"
-    },
-    {
-      city: "Agra",
-      address: "KheriaMod Agra - 226001",
-      phone: "+91 98765 43211",
-      email: "support@libraryconnekto.me",
-      hours: "Mon-Fri: 9 AM - 6 PM"
-    }
-  ];
-
   const faqs = [
     {
-      question: "How quickly can I set up my library?",
-      answer: "Most libraries are up and running within 24-48 hours after signup."
+      question: "How long does onboarding take for a typical library?",
+      answer: "Most libraries launch within 1-3 business days, including seat setup, pricing, and staff training."
     },
     {
-      question: "Do you provide training for staff?",
-      answer: "Yes, we provide comprehensive training and ongoing support for all staff members."
+      question: "What help do you provide for staff and admins?",
+      answer: "We offer guided setup, role-based training, and live support during your first weeks so your team is confident from day one."
     },
     {
-      question: "What's included in the free trial?",
-      answer: "Full access to all features for 14 days, including setup assistance and support."
+      question: "How do you handle payments and refunds?",
+      answer: "Payments are processed securely with clear transaction logs. Refunds are available based on your policy, and we can configure it during onboarding."
     },
     {
-      question: "Can I integrate with existing systems?",
-      answer: "Yes, we support integration with most existing library management systems."
+      question: "What data and insights will I get?",
+      answer: "You will see seat utilization, attendance trends, revenue insights, and peak-hour analytics to optimize operations."
     }
   ];
 
   return (
     <div className="min-h-screen flex flex-col font-body">
-      <Header />
-
       {/* Hero Section */}
       <section className="relative isolate pt-16 md:pt-20 overflow-hidden min-h-[60vh] flex items-center">
         <div className="absolute inset-0 -z-10">
@@ -315,23 +227,6 @@ export default function Contact() {
             <div className="flex flex-col lg:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
               <DownloadAppButton variant="secondary" size="default" />
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="relative py-20 bg-slate-900/50 z-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            {stats.map((stat, index) => (
-              <StatCard
-                key={index}
-                icon={stat.icon}
-                value={stat.value}
-                label={stat.label}
-                delay={index * 100}
-              />
-            ))}
           </div>
         </div>
       </section>
@@ -460,31 +355,6 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* Offices Section */}
-      <section className="relative py-20 z-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
-              <span className="gradient-text">Our Offices</span>
-            </h2>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            {offices.map((office, index) => (
-              <OfficeCard
-                key={index}
-                city={office.city}
-                address={office.address}
-                phone={office.phone}
-                email={office.email}
-                hours={office.hours}
-                delay={index * 100}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -509,8 +379,6 @@ export default function Contact() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

@@ -1,9 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
+import {
+  useAdminDetails,
+  useAdminStats,
+  useAdminDashboard,
+  useAdminPendingBookings,
+  useAdminMessages,
+  useAdminRecentActivities,
+  useAdminRemovalRequests,
+  useInvalidateAdminQueries,
+} from '../../lib/queries';
 import { 
   PieChartComponent, 
   DonutChartComponent, 
@@ -14,20 +23,7 @@ import {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, userType, logout, setUser } = useAuth();
-  const [stats, setStats] = useState({
-    totalStudents: 0,
-    activeStudents: 0,
-    totalSeats: 0,
-    occupiedSeats: 0,
-    pendingBookings: 0,
-    totalRevenue: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [pendingBookings, setPendingBookings] = useState([]);
-  const [recentMessages, setRecentMessages] = useState([]);
-  const [recentActivities, setRecentActivities] = useState([]);
-  const [removalRequestsPreview, setRemovalRequestsPreview] = useState([]);
+  const { user, userType, setUser } = useAuth();
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -35,6 +31,17 @@ const AdminDashboard = () => {
   const [panelOrderTop, setPanelOrderTop] = useState('bookings'); // 'bookings' | 'messages'
   const sidebarRef = useRef(null);
 
+  // Use React Query hooks for data fetching
+  const { data: adminDetails, isLoading: adminDetailsLoading } = useAdminDetails();
+  const { data: statsResponse, isLoading: statsLoading } = useAdminStats();
+  const { data: bookingsResponse, isLoading: bookingsLoading } = useAdminDashboard();
+  const { data: pendingBookings = [], isLoading: bookingsListLoading } = useAdminPendingBookings();
+  const { data: messagesResponse = [], isLoading: messagesLoading } = useAdminMessages();
+  const { data: recentActivities = [], isLoading: activitiesLoading } = useAdminRecentActivities(5);
+  const { data: removalPreviewResponse, isLoading: removalLoading } = useAdminRemovalRequests('pending', 5, 0);
+  const invalidateQueries = useInvalidateAdminQueries();
+
+  // Check authentication and admin details
   useEffect(() => {
     if (userType !== 'admin') {
       navigate('/admin/auth');
@@ -42,12 +49,7 @@ const AdminDashboard = () => {
     }
     
     // Check if admin details are complete
-    checkAdminDetails();
-  }, [userType, navigate]);
-
-  const checkAdminDetails = async () => {
-    try {
-      const adminDetails = await apiClient.get('/admin/details');
+    if (!adminDetailsLoading && adminDetails) {
       if (!adminDetails.is_complete) {
         navigate('/admin/details');
         return;
@@ -59,69 +61,63 @@ const AdminDashboard = () => {
           library_name: adminDetails.library_name
         }));
       }
-      fetchDashboardData();
-    } catch (error) {
-      console.error('Error checking admin details:', error);
-      if ((error?.message || '').toLowerCase().includes('not authenticated')) {
-        navigate('/admin/auth');
-      } else {
-        navigate('/admin/details');
-      }
     }
-  };
+  }, [userType, navigate, adminDetails, adminDetailsLoading, setUser]);
 
-  const fetchDashboardData = async () => {
-    try {
-      const [statsResponse, bookingsResponse, pendingListResponse, messagesResponse, activitiesResponse, removalPreviewResponse] = await Promise.all([
-        apiClient.get('/admin/stats'),
-        apiClient.get('/admin/analytics/dashboard'),
-        // Some backends do not allow GET with this route; ignore 405 gracefully
-        apiClient.get('/booking/seat-bookings?status=pending').catch(() => []),
-        apiClient.get('/messaging/admin/messages').catch(() => []),
-        apiClient.get('/admin/recent-activities?limit=5').catch(() => []),
-        apiClient.get('/student-removal/requests?status=pending&limit=5&offset=0').catch(() => ({ requests: [] }))
-      ]);
-      
-      
-      setStats({
-        totalStudents: statsResponse.total_students || 0,
-        activeStudents: statsResponse.present_students || 0,
-        totalSeats: statsResponse.total_seats || 0,
-        // Treat each registered student as occupying a seat; cap by total seats
-        occupiedSeats: Math.min(statsResponse.total_students || 0, statsResponse.total_seats || 0),
-        pendingBookings: (bookingsResponse?.library_stats?.pending_bookings) || 0,
-        totalRevenue: statsResponse.total_revenue || 0
-      });
-
-      if (Array.isArray(pendingListResponse)) {
-        setPendingBookings(pendingListResponse);
-      }
-      if (Array.isArray(messagesResponse)) {
-        // Show only messages received from students
-        const fromStudents = messagesResponse.filter(m => (m?.sender_type || '').toLowerCase() === 'student');
-        const sorted = [...fromStudents].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        setRecentMessages(sorted);
-      }
-      if (Array.isArray(activitiesResponse)) {
-        setRecentActivities(activitiesResponse);
-      }
-      if (removalPreviewResponse && Array.isArray(removalPreviewResponse.requests)) {
-        setRemovalRequestsPreview(removalPreviewResponse.requests);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
+  // Process stats data
+  const stats = useMemo(() => {
+    if (!statsResponse) {
+      return {
+        totalStudents: 0,
+        activeStudents: 0,
+        totalSeats: 0,
+        occupiedSeats: 0,
+        pendingBookings: 0,
+        totalRevenue: 0,
+      };
     }
-  };
+    return {
+      totalStudents: statsResponse.total_students || 0,
+      activeStudents: statsResponse.present_students || 0,
+      totalSeats: statsResponse.total_seats || 0,
+      // Treat each registered student as occupying a seat; cap by total seats
+      occupiedSeats: Math.min(statsResponse.total_students || 0, statsResponse.total_seats || 0),
+      pendingBookings: (bookingsResponse?.library_stats?.pending_bookings) || 0,
+      totalRevenue: statsResponse.total_revenue || 0,
+    };
+  }, [statsResponse, bookingsResponse]);
 
+  // Process messages - show only messages received from students
+  const recentMessages = useMemo(() => {
+    if (!messagesResponse || !Array.isArray(messagesResponse)) return [];
+    const fromStudents = messagesResponse.filter(m => (m?.sender_type || '').toLowerCase() === 'student');
+    return [...fromStudents].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [messagesResponse]);
+
+  // Process removal requests
+  const removalRequestsPreview = useMemo(() => {
+    if (!removalPreviewResponse || !Array.isArray(removalPreviewResponse.requests)) return [];
+    return removalPreviewResponse.requests;
+  }, [removalPreviewResponse]);
+
+
+  // Mutation for booking approval
+  const bookingApprovalMutation = useMutation({
+    mutationFn: async ({ bookingId, status }) => {
+      return apiClient.put(`/booking/seat-bookings/${bookingId}`, { status });
+    },
+    onSuccess: () => {
+      invalidateQueries.invalidateBookings();
+      invalidateQueries.invalidateStats();
+      invalidateQueries.invalidateDashboard();
+      setSelectedBooking(null);
+    },
+  });
 
   const handleBookingApproval = async (bookingId, status) => {
     try {
-      await apiClient.put(`/booking/seat-bookings/${bookingId}`, { status });
+      await bookingApprovalMutation.mutateAsync({ bookingId, status });
       alert(`Booking ${status} successfully!`);
-      setSelectedBooking(null);
-      fetchDashboardData(); // Refresh the data
     } catch (error) {
       console.error(`Error ${status} booking:`, error);
       alert(`Failed to ${status} booking. Please try again.`);
@@ -267,25 +263,16 @@ const AdminDashboard = () => {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <Header />
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white"></div>
-            <p className="text-white/70 mt-4">Loading dashboard...</p>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  // Loading skeleton component for localized loading states
+  const LoadingSkeleton = ({ className = '' }) => (
+    <div className={`animate-pulse bg-white/5 rounded-xl ${className}`}></div>
+  );
+
+  // Determine if initial data is loading
+  const isLoading = adminDetailsLoading || statsLoading || bookingsLoading;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header />
-      
       <main className="flex-grow container mx-auto px-4 pt-24 pb-8 relative">
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -343,11 +330,19 @@ const AdminDashboard = () => {
             <div className="lg:col-span-3">
               {/* Enhanced Stats Cards with Charts */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div 
-                  className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group cursor-pointer relative"
-                  onClick={() => navigate('/admin/attendance-details')}
-                  title="Click to view detailed attendance records"
-                >
+                {statsLoading ? (
+                  <>
+                    <LoadingSkeleton className="h-48" />
+                    <LoadingSkeleton className="h-48" />
+                    <LoadingSkeleton className="h-48" />
+                  </>
+                ) : (
+                  <>
+                    <div 
+                      className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group cursor-pointer relative"
+                      onClick={() => navigate('/admin/attendance-details')}
+                      title="Click to view detailed attendance records"
+                    >
                   {/* Enhanced Hover Tooltip */}
                   <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20">
                     <div className="bg-gradient-to-br from-emerald-600 to-green-700 border border-emerald-400/30 rounded-lg p-2 shadow-lg text-center whitespace-nowrap backdrop-blur-sm">
@@ -483,10 +478,18 @@ const AdminDashboard = () => {
                     </div>
                   )}
                 </div>
+                    </>
+                  )}
               </div>
 
               {/* Chart Visualizations Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {statsLoading || bookingsLoading ? (
+                <>
+                  <LoadingSkeleton className="h-64" />
+                  <LoadingSkeleton className="h-64" />
+                </>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Students Distribution Pie Chart */}
                 <PieChartComponent
                   title="Student Distribution"
@@ -513,9 +516,17 @@ const AdminDashboard = () => {
                   height={250}
                 />
               </div>
+              )}
 
               {/* Progress Rings Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {statsLoading ? (
+                <>
+                  <LoadingSkeleton className="h-64" />
+                  <LoadingSkeleton className="h-64" />
+                  <LoadingSkeleton className="h-64" />
+                </>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl text-center">
                   <div className="relative inline-flex items-center justify-center mb-4">
                     <svg width={120} height={120} className="transform -rotate-90">
@@ -631,6 +642,7 @@ const AdminDashboard = () => {
                   </p>
                 </div>
               </div>
+              )}
 
               {/* Quick Actions directly below stats */}
               <div className="mt-8">
@@ -667,28 +679,31 @@ const AdminDashboard = () => {
                     onClick={() => navigate('/admin/student-removal-requests')}
                   />
                   <QuickActionCard
-                    title="Analytics"
-                    description="View detailed reports and insights"
-                    icon="📊"
-                    gradient="from-emerald-500 to-green-500"
-                    onClick={() => navigate('/admin/analytics')}
-                  />
-                  <QuickActionCard
                     title="Booking Management"
                     description="Manage all booking requests and approvals"
                     icon="📋"
                     gradient="from-orange-500 to-yellow-500"
                     onClick={() => navigate('/admin/booking-management')}
                   />
+                  <QuickActionCard
+                    title="QR Scanner"
+                    description="Scan student QR and initiate transfer"
+                    icon="🔍"
+                    gradient="from-cyan-500 to-blue-500"
+                    onClick={() => navigate('/admin/scanner')}
+                  />
                 </div>
               </div>
               {/* Recent Activity inside 3/4 column */}
-              <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
-                <h2 className="text-3xl font-bold text-white mb-6 text-center">
-                  <span className="bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">Recent Activity</span>
-                </h2>
-                <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent space-y-4">
-                  {recentActivities && recentActivities.length > 0 ? (
+              {activitiesLoading ? (
+                <LoadingSkeleton className="h-96 mt-8" />
+              ) : (
+                <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
+                  <h2 className="text-3xl font-bold text-white mb-6 text-center">
+                    <span className="bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">Recent Activity</span>
+                  </h2>
+                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent space-y-4">
+                    {recentActivities && recentActivities.length > 0 ? (
                     recentActivities.map((activity) => (
                       <div key={activity.id} className="flex items-center space-x-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10">
@@ -706,9 +721,10 @@ const AdminDashboard = () => {
                     <div className="text-center py-8">
                       <p className="text-white/60">No recent activities</p>
                     </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
             <div className="lg:col-span-1">
               <div ref={sidebarRef} className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-xl h-full flex flex-col relative">
@@ -763,7 +779,9 @@ const AdminDashboard = () => {
                       <h3 className="text-white font-semibold">Messages from Students</h3>
                     </div>
                     <div className="flex-1 overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                      {recentMessages && recentMessages.length > 0 ? (
+                      {messagesLoading ? (
+                        <div className="p-4 text-center text-white/60">Loading...</div>
+                      ) : recentMessages && recentMessages.length > 0 ? (
                         <ul className="divide-y divide-white/10">
                           {recentMessages.slice(0,5).map((m) => (
                             <li 
@@ -804,7 +822,9 @@ const AdminDashboard = () => {
                         </button>
                       </div>
                       <div className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                        {removalRequestsPreview && removalRequestsPreview.length > 0 ? (
+                        {removalLoading ? (
+                          <div className="text-center text-white/60 text-sm">Loading...</div>
+                        ) : removalRequestsPreview && removalRequestsPreview.length > 0 ? (
                           <ul className="divide-y divide-white/10">
                             {removalRequestsPreview.map((r) => (
                               <li key={r.id} className="py-2 text-white/90">
@@ -844,7 +864,9 @@ const AdminDashboard = () => {
                       <h3 className="text-white font-semibold">Messages from Students</h3>
                     </div>
                     <div className="flex-1 overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                      {recentMessages && recentMessages.length > 0 ? (
+                      {messagesLoading ? (
+                        <div className="p-4 text-center text-white/60">Loading...</div>
+                      ) : recentMessages && recentMessages.length > 0 ? (
                         <ul className="divide-y divide-white/10">
                           {recentMessages.slice(0,5).map((m) => (
                             <li 
@@ -890,30 +912,34 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex-1 overflow-y-auto max-h-64 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                      <table className="min-w-full text-sm">
-                        <thead>
-                          <tr className="text-white/70">
-                            <th className="px-4 py-2 text-left">Name</th>
-                            <th className="px-4 py-2 text-left">Mobile</th>
-                            <th className="px-4 py-2 text-left">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pendingBookings && pendingBookings.length > 0 ? (
-                            pendingBookings.slice(0, 5).map((b) => (
-                              <tr key={b.id} className={`border-t border-white/10 text-white/90 hover:bg-white/5 cursor-pointer transition-colors ${getBookingStatusColor(b.status)}`} onClick={() => setSelectedBooking(b)}>
-                                <td className="px-4 py-2">{b.name || '—'}</td>
-                                <td className="px-4 py-2">{b.mobile || '—'}</td>
-                                <td className="px-4 py-2">{b.created_at ? new Date(b.created_at).toLocaleDateString() : '—'}</td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan="3" className="px-4 py-6 text-center text-white/60">No pending bookings</td>
+                      {bookingsListLoading ? (
+                        <div className="p-4 text-center text-white/60">Loading...</div>
+                      ) : (
+                        <table className="min-w-full text-sm">
+                          <thead>
+                            <tr className="text-white/70">
+                              <th className="px-4 py-2 text-left">Name</th>
+                              <th className="px-4 py-2 text-left">Mobile</th>
+                              <th className="px-4 py-2 text-left">Date</th>
                             </tr>
-                          )}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {pendingBookings && pendingBookings.length > 0 ? (
+                              pendingBookings.slice(0, 5).map((b) => (
+                                <tr key={b.id} className={`border-t border-white/10 text-white/90 hover:bg-white/5 cursor-pointer transition-colors ${getBookingStatusColor(b.status)}`} onClick={() => setSelectedBooking(b)}>
+                                  <td className="px-4 py-2">{b.name || '—'}</td>
+                                  <td className="px-4 py-2">{b.mobile || '—'}</td>
+                                  <td className="px-4 py-2">{b.created_at ? new Date(b.created_at).toLocaleDateString() : '—'}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan="3" className="px-4 py-6 text-center text-white/60">No pending bookings</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                     {/* New: Removal Requests preview below messages within sidebar (when messages are on bottom) */}
                     <div className="p-4 border-t border-white/10">
@@ -927,7 +953,9 @@ const AdminDashboard = () => {
                         </button>
                       </div>
                       <div className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                        {removalRequestsPreview && removalRequestsPreview.length > 0 ? (
+                        {removalLoading ? (
+                          <div className="text-center text-white/60 text-sm">Loading...</div>
+                        ) : removalRequestsPreview && removalRequestsPreview.length > 0 ? (
                           <ul className="divide-y divide-white/10">
                             {removalRequestsPreview.map((r) => (
                               <li key={r.id} className="py-2 text-white/90">
@@ -1106,15 +1134,17 @@ const AdminDashboard = () => {
               <div className="flex gap-4 pt-4">
                 <button
                   onClick={() => handleBookingApproval(selectedBooking.id, 'approved')}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-200 shadow-lg shadow-emerald-500/25 font-semibold"
+                  disabled={bookingApprovalMutation.isPending}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-200 shadow-lg shadow-emerald-500/25 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  ✓ Approve Booking
+                  {bookingApprovalMutation.isPending ? 'Processing...' : '✓ Approve Booking'}
                 </button>
                 <button
                   onClick={() => handleBookingApproval(selectedBooking.id, 'rejected')}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 transition-all duration-200 shadow-lg shadow-red-500/25 font-semibold"
+                  disabled={bookingApprovalMutation.isPending}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 transition-all duration-200 shadow-lg shadow-red-500/25 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  ✗ Reject Booking
+                  {bookingApprovalMutation.isPending ? 'Processing...' : '✗ Reject Booking'}
                 </button>
               </div>
             </div>
@@ -1123,8 +1153,7 @@ const AdminDashboard = () => {
       )}
 
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../lib/api';
 import PaymentService from '../../services/paymentService';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
 
 const PaymentConfirmation = () => {
   const { bookingId } = useParams();
@@ -133,16 +131,12 @@ const PaymentConfirmation = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="relative z-10">
-          <Header />
-        </div>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-slate-300">Loading booking details...</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -150,9 +144,6 @@ const PaymentConfirmation = () => {
   if (error && !booking) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="relative z-10">
-          <Header />
-        </div>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
@@ -166,17 +157,12 @@ const PaymentConfirmation = () => {
             </button>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="relative z-10">
-        <Header />
-      </div>
-      
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}
@@ -358,8 +344,6 @@ const PaymentConfirmation = () => {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };

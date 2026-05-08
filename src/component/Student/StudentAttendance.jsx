@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-
 const StudentAttendance = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
@@ -13,6 +10,12 @@ const StudentAttendance = () => {
   const [currentAttendance, setCurrentAttendance] = useState(null);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const locationWatchIdRef = useRef(null);
+  const heartbeatIntervalRef = useRef(null);
+  const trackingRef = useRef({ lastSentAt: 0, lastLat: null, lastLon: null });
+  const minSendIntervalMs = 5 * 60 * 1000;
+  const minMoveDistanceMeters = 40;
+  const heartbeatIntervalMs = 10 * 60 * 1000;
 
   useEffect(() => {
     if (userType !== 'student') {
@@ -87,6 +90,7 @@ const StudentAttendance = () => {
   const handleCheckOut = async () => {
     setCheckingOut(true);
     try {
+      stopLocationTracking();
       await apiClient.post('/student/attendance/checkout');
       fetchAttendanceData();
       alert('Successfully checked out!');
@@ -97,6 +101,96 @@ const StudentAttendance = () => {
       setCheckingOut(false);
     }
   };
+
+  const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const rLat1 = toRad(lat1);
+    const rLon1 = toRad(lon1);
+    const rLat2 = toRad(lat2);
+    const rLon2 = toRad(lon2);
+    const dLat = rLat2 - rLat1;
+    const dLon = rLon2 - rLon1;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.asin(Math.sqrt(a));
+    return 6371 * c * 1000;
+  };
+
+  const stopLocationTracking = () => {
+    if (locationWatchIdRef.current !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(locationWatchIdRef.current);
+      locationWatchIdRef.current = null;
+    }
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
+  const sendLocationPing = async (latitude, longitude, force = false) => {
+    const now = Date.now();
+    const { lastSentAt, lastLat, lastLon } = trackingRef.current;
+    const elapsed = now - lastSentAt;
+    let movedEnough = true;
+
+    if (lastLat !== null && lastLon !== null) {
+      movedEnough = calculateDistanceMeters(lastLat, lastLon, latitude, longitude) >= minMoveDistanceMeters;
+    }
+
+    if (!force && elapsed < minSendIntervalMs && !movedEnough) {
+      return;
+    }
+
+    try {
+      const res = await apiClient.post('/student/attendance/check-location', { latitude, longitude });
+      trackingRef.current = { lastSentAt: now, lastLat: latitude, lastLon: longitude };
+      if (res?.auto_checkout) {
+        stopLocationTracking();
+        fetchAttendanceData();
+        alert('Auto check-out triggered because you moved outside library range.');
+      }
+    } catch (error) {
+      console.error('Location ping failed:', error);
+    }
+  };
+
+  const getAndSendCurrentLocation = (force = false) => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        await sendLocationPing(position.coords.latitude, position.coords.longitude, force);
+      },
+      (error) => {
+        console.error('Failed to get heartbeat location:', error);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    if (!currentAttendance || !navigator.geolocation) {
+      stopLocationTracking();
+      return;
+    }
+
+    getAndSendCurrentLocation(true);
+    locationWatchIdRef.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        await sendLocationPing(position.coords.latitude, position.coords.longitude, false);
+      },
+      (error) => {
+        console.error('watchPosition failed:', error);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+
+    heartbeatIntervalRef.current = setInterval(() => {
+      getAndSendCurrentLocation(true);
+    }, heartbeatIntervalMs);
+
+    return () => {
+      stopLocationTracking();
+    };
+  }, [currentAttendance]);
 
   const formatDuration = (duration) => {
     if (!duration) return 'N/A';
@@ -144,19 +238,15 @@ const StudentAttendance = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
-        <Footer />
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
-      <Header />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
         {/* Header */}
         <div className="mb-8">
@@ -326,8 +416,7 @@ const StudentAttendance = () => {
         </div>
       </div>
 
-      <Footer />
-    </div>
+      </div>
   );
 };
 

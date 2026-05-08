@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import Header from '../Header/Header'
-import Footer from '../Footer/Footer'
 import { apiClient } from '../../lib/api'
 import { 
   PieChartComponent, 
@@ -124,8 +122,6 @@ export default function AdminAnalytics() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <Header />
-
       <main className="mx-auto max-w-7xl px-4 pt-24 pb-8">
 
         {error ? (
@@ -374,8 +370,7 @@ export default function AdminAnalytics() {
         ) : null}
       </main>
 
-      <Footer />
-    </div>
+      </div>
   )
 }
 
