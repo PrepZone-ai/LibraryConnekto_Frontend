@@ -29,9 +29,25 @@ createRoot(document.getElementById('root')).render(
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     if (import.meta.env.PROD) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+
+        // Force an update check on every load so a redeployed sw.js is picked
+        // up immediately instead of being served from the HTTP cache.
+        reg.update().catch(() => {})
+
+        // When a brand new SW takes control (e.g. user is upgrading from a
+        // broken v1/v2), reload once so they run the freshest app code paired
+        // with the freshest SW. Guarded against reload loops.
+        let hasReloaded = false
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (hasReloaded) return
+          hasReloaded = true
+          window.location.reload()
+        })
+      } catch {
         // no-op: registration failure can be ignored for non-HTTPS dev
-      })
+      }
       return
     }
 
