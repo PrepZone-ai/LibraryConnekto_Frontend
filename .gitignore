@@ -94,3 +94,5 @@ Library-Connekto-Release.apk
 # ios/*.xcworkspace/xcuserdata/
 # ios/*.xcodeproj/xcuserdata/
 # ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+.vercel
+.env*.local
