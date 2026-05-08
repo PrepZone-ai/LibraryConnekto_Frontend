@@ -22,6 +22,20 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.*.local
+.env.*
+.secrets
+.secrets.*
+secrets.*
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.enc
 
 # Editor and OS
 .vscode/*
