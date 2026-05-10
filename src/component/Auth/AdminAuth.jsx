@@ -31,7 +31,7 @@ const EyeOffIcon = ({ className = "w-5 h-5" }) => (
 
 export default function AdminAuth() {
   const navigate = useNavigate()
-  const { login, resendAdminVerification } = useAuth()
+  const { login, resendAdminVerification, isLoggedIn, userType, loading: authLoading } = useAuth()
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
@@ -41,6 +41,14 @@ export default function AdminAuth() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
+
+  // ── If already logged in, redirect to correct dashboard ──
+  useEffect(() => {
+    if (authLoading) return // wait for auth to initialise
+    if (isLoggedIn) {
+      navigate(userType === 'admin' ? '/admin/dashboard' : '/student/dashboard', { replace: true })
+    }
+  }, [isLoggedIn, userType, authLoading, navigate])
 
   useEffect(() => {
     // Check if mode is specified in URL

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -36,13 +36,21 @@ const BookIcon = ({ className = "w-6 h-6" }) => (
 
 export default function StudentLogin() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, isLoggedIn, userType, loading: authLoading } = useAuth()
   const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+
+  // ── If already logged in, redirect to correct dashboard ──
+  useEffect(() => {
+    if (authLoading) return
+    if (isLoggedIn) {
+      navigate(userType === 'admin' ? '/admin/dashboard' : '/student/dashboard', { replace: true })
+    }
+  }, [isLoggedIn, userType, authLoading, navigate])
 
   const handleLogin = async (e) => {
     e.preventDefault()

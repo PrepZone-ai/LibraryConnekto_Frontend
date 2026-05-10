@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function SelectRoleModal({ open, onClose, onSelect }) {
   const navigate = useNavigate()
+  const { isLoggedIn, userType } = useAuth()
   
   useEffect(() => {
     const onEsc = (e) => {
@@ -18,8 +20,13 @@ export default function SelectRoleModal({ open, onClose, onSelect }) {
   const select = (role) => {
     onSelect?.(role)
     onClose()
-    // Don't redirect automatically - let user stay on home page
-    // They can click the appropriate button to proceed with auth
+    if (isLoggedIn) {
+      // Logged-in user changed role context → go to that role's home
+      navigate(role === 'admin' ? '/admin/dashboard' : '/student/dashboard', { replace: true })
+    } else {
+      // Not logged in → send to the login page for that role
+      navigate(role === 'admin' ? '/admin/auth' : '/student/login')
+    }
   }
 
   return createPortal(

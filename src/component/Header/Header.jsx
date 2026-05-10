@@ -7,7 +7,7 @@ import SelectRoleModal from '../Auth/SelectRoleModal';
 import { useStudentProfile, queryKeys } from '../../lib/queries';
 
 export default function Header() {
-  const { user, userType, isLoggedIn, logout, selectedRole, setRole } = useAuth();
+  const { user, userType, isLoggedIn, logout, selectedRole, setRole, clearRole } = useAuth();
   const queryClient = useQueryClient();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -77,12 +77,11 @@ export default function Header() {
 
   const handleSelectRole = (role) => {
     setShowRoleModal(false);
-    setRole(role); // Store role in localStorage
+    setRole(role); // Store role — SelectRoleModal handles the redirect
   };
 
   const handleClearRole = () => {
-    setRole(null); // Clear role from localStorage
-    localStorage.removeItem('selectedRole');
+    clearRole(); // clears both state and localStorage
   };
 
   // Determine current page title for admin and student routes

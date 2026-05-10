@@ -22,6 +22,15 @@ export const removeAuthToken = () => {
   } catch (_) {}
 };
 
+export const redirectToLogin = () => {
+  // Avoid redirect loops if already on a public auth page
+  const currentPath = window.location.pathname;
+  const authPaths = ['/login', '/admin/login', '/register', '/forgot-password', '/setup-password'];
+  if (!authPaths.some((p) => currentPath.startsWith(p))) {
+    window.location.href = '/admin/login';
+  }
+};
+
 export const isTokenValid = () => {
   try {
     const token = getAuthToken();
@@ -46,7 +55,15 @@ class ApiClient {
     const headers = { ...extra };
     if (includeAuth) {
       const token = getAuthToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
+      if (token) {
+        // Proactively check expiry before sending - avoids a wasted round-trip
+        if (!isTokenValid()) {
+          removeAuthToken();
+          redirectToLogin();
+          throw new Error('Session expired. Please log in again.');
+        }
+        headers.Authorization = `Bearer ${token}`;
+      }
     }
     return headers;
   }
@@ -79,11 +96,13 @@ class ApiClient {
           }
         }
       } catch (_) {}
-      
-      // Handle 401 as authentication issue (clear token). Do not clear on 403.
-      if (res.status === 401 && includeAuth) {
+
+      // 401 = token rejected by server (expired/invalid), 403 "Not authenticated" = no token sent
+      // Both mean the session is gone — clear and redirect to login.
+      if (includeAuth && (res.status === 401 || (res.status === 403 && message === 'Not authenticated'))) {
         removeAuthToken();
-        throw new Error('Not authenticated');
+        redirectToLogin();
+        throw new Error('Session expired. Please log in again.');
       }
       
       throw new Error(message);

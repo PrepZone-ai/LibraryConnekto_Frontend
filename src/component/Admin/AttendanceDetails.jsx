@@ -176,22 +176,25 @@ const AttendanceDetails = () => {
       console.log('Fetching attendance data for date:', selectedDate);
       
       // Fetch attendance data for the selected date
-      const response = await apiClient.get(`/admin/attendance?date=${selectedDate}`);
+      // Backend returns PaginatedResponse: { items: [...], total: N, page: N, page_size: N }
+      const response = await apiClient.get(`/admin/attendance?date=${selectedDate}&limit=100`);
       console.log('API Response:', response);
       
-      // Handle both direct array response and nested data response
+      // Correctly unwrap PaginatedResponse — backend wraps records in `items`
       let attendanceData = [];
       if (Array.isArray(response)) {
+        // Direct array (legacy fallback)
         attendanceData = response;
-      } else if (response && response.data && Array.isArray(response.data)) {
-        attendanceData = response.data;
+      } else if (response && Array.isArray(response.items)) {
+        // PaginatedResponse shape: { items: [...], total, page, page_size }
+        attendanceData = response.items;
+      } else if (response && response.data && Array.isArray(response.data.items)) {
+        attendanceData = response.data.items;
       } else if (response && Array.isArray(response.data)) {
         attendanceData = response.data;
       }
       
-      console.log('Raw attendance data:', attendanceData);
-      
-      console.log('Processed attendance data:', attendanceData);
+      console.log('Unwrapped attendance records:', attendanceData);
       
       // Sort by student_id for consistent display
       attendanceData.sort((a, b) => {
@@ -202,11 +205,13 @@ const AttendanceDetails = () => {
       
       setAttendanceData(attendanceData);
       
-      // Calculate stats
-      const totalPresent = attendanceData.filter(record => record.entry_time && !record.exit_time).length;
+      // Calculate stats from backend `status` field
+      // status === 'Present'   → checked in, NOT yet checked out
+      // status === 'Completed' → fully checked out
+      const totalPresent = attendanceData.filter(r => r.status === 'Present').length;
       const totalStudents = attendanceData.length;
-      const checkIns = attendanceData.filter(record => record.entry_time).length;
-      const checkOuts = attendanceData.filter(record => record.exit_time).length;
+      const checkIns = attendanceData.filter(r => r.entry_time).length;
+      const checkOuts = attendanceData.filter(r => r.exit_time).length;
       
       setStats({
         totalPresent,
@@ -361,12 +366,16 @@ const AttendanceDetails = () => {
           <div className="mb-4">
             <h1 className="text-xl font-semibold text-white mb-1">
               <span className="bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                Attendance Details - {new Date(selectedDate).toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
+                Attendance Details - {(() => {
+                  // Parse date string as local date to avoid UTC off-by-one
+                  const [y, m, d] = selectedDate.split('-').map(Number);
+                  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  });
+                })()}
               </span>
             </h1>
             <p className="text-white/60 text-sm">View daily attendance records and student check-in/out times</p>
@@ -469,7 +478,7 @@ const AttendanceDetails = () => {
                         Attendance Records
                       </h3>
                       <p className="text-white/70 text-xs mt-1">
-                        {new Date(selectedDate).toLocaleDateString()}
+                        {(() => { const [y,m,d] = selectedDate.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString(); })()}
                       </p>
                     </div>
                     <div className="text-right">
@@ -533,7 +542,7 @@ const AttendanceDetails = () => {
                     <div className="text-4xl mb-3">📅</div>
                     <h3 className="text-sm font-semibold text-white mb-1">No Records</h3>
                     <p className="text-white/70 text-xs">
-                      No attendance data for {new Date(selectedDate).toLocaleDateString()}.
+                      No attendance data for {(() => { const [y,m,d] = selectedDate.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString(); })()}.
                     </p>
                   </div>
                 )}
