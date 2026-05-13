@@ -1,45 +1,47 @@
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import './App.css'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
-import AppLayout from './component/Layout/AppLayout'
-import Home from './component/Home/Home'
-import Services from './component/Services/Services'
 import About from './component/About/About'
-import Contact from './component/Contact/Contact'
 import AdminAuth from './component/Auth/AdminAuth'
+import AdminResetPassword from './component/Auth/AdminResetPassword'
+import EmailVerificationError from './component/Auth/EmailVerificationError'
+import EmailVerificationSuccess from './component/Auth/EmailVerificationSuccess'
+import StudentForgotPassword from './component/Auth/StudentForgotPassword'
 import StudentLogin from './component/Auth/StudentLogin'
 import StudentSetPassword from './component/Auth/StudentSetPassword'
-import StudentForgotPassword from './component/Auth/StudentForgotPassword'
-import AdminResetPassword from './component/Auth/AdminResetPassword'
-import EmailVerificationSuccess from './component/Auth/EmailVerificationSuccess'
-import EmailVerificationError from './component/Auth/EmailVerificationError'
+import AnonymousBookingPage from './component/Booking/AnonymousBookingPage'
+import Contact from './component/Contact/Contact'
+import Home from './component/Home/Home'
+import AppLayout from './component/Layout/AppLayout'
 import LibraryDetails from './component/Library/LibraryDetails'
+import LibraryList from './component/Library/LibraryList'
+import Services from './component/Services/Services'
+import { AuthProvider } from './contexts/AuthContext'
 
 // Admin Components
-import AdminDashboard from './component/Admin/AdminDashboard'
-import AdminDetailsForm from './component/Admin/AdminDetailsForm'
-import AdminProfile from './component/Admin/AdminProfile'
-import StudentManagement from './component/Admin/StudentManagement'
-import AdminMessages from './component/Admin/AdminMessages'
-import SeatManagement from './component/Admin/SeatManagement'
 import AdminAnalytics from './component/Admin/AdminAnalytics'
 import AdminBookingManagement from './component/Admin/AdminBookingManagement'
+import AdminDashboard from './component/Admin/AdminDashboard'
+import AdminDetailsForm from './component/Admin/AdminDetailsForm'
+import AdminMessages from './component/Admin/AdminMessages'
+import AdminProfile from './component/Admin/AdminProfile'
+import AdminQRScanner from './component/Admin/AdminQRScanner'
+import AdminReferral from './component/Admin/AdminReferral'
 import AttendanceDetails from './component/Admin/AttendanceDetails'
 import RevenueDetails from './component/Admin/RevenueDetails'
+import SeatManagement from './component/Admin/SeatManagement'
 import StudentAttendanceDetails from './component/Admin/StudentAttendanceDetails'
+import StudentManagement from './component/Admin/StudentManagement'
 import StudentRemovalRequests from './component/Admin/StudentRemovalRequests'
-import AdminReferral from './component/Admin/AdminReferral'
-import AdminQRScanner from './component/Admin/AdminQRScanner'
 
 // Student Components
-import StudentDashboard from './component/Student/StudentDashboard'
-import BookSeat from './component/Student/BookSeat'
-import StudentMessages from './component/Student/StudentMessages'
-import StudentTasks from './component/Student/StudentTasks'
-import StudentExams from './component/Student/StudentExams'
-import StudentAttendance from './component/Student/StudentAttendance'
 import AttendanceHistory from './component/Student/AttendanceHistory'
+import BookSeat from './component/Student/BookSeat'
+import StudentAttendance from './component/Student/StudentAttendance'
+import StudentDashboard from './component/Student/StudentDashboard'
+import StudentExams from './component/Student/StudentExams'
+import StudentMessages from './component/Student/StudentMessages'
 import StudentProfile from './component/Student/StudentProfile'
+import StudentTasks from './component/Student/StudentTasks'
 
 // Payment Components
 import PaymentConfirmation from './component/Payment/PaymentConfirmation'
@@ -58,7 +60,9 @@ function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/book-seat" element={<AnonymousBookingPage />} />
             <Route path="/library/:libraryId" element={<LibraryDetails />} />
+            <Route path="/libraries" element={<LibraryList />} />
 
             {/* Authentication Routes */}
             <Route path="/admin/auth" element={<AdminAuth />} />

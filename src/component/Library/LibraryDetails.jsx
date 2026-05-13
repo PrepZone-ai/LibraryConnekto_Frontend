@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../../lib/api';
 
 const LibraryDetails = () => {
@@ -61,8 +61,12 @@ const LibraryDetails = () => {
   };
   
   const handleBookRequest = () => {
-    // Scroll to the book seat section on home page
-    navigate('/#book-seat');
+    navigate('/book-seat', {
+      state: {
+        libraryId,
+        libraryName: library?.library_name || '',
+      },
+    });
   };
   
   if (loading) {

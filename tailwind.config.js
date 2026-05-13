@@ -23,7 +23,9 @@ export default {
       },
       fontFamily: {
         display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+        body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        "library-display": ["Space Grotesk", "ui-sans-serif", "system-ui", "sans-serif"],
+        "library-body": ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"]
       },
       backgroundImage: {
         "hero-pattern": "url('/hero.jpg')"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { apiClient } from '../../lib/api';
 import PaymentService from '../../services/paymentService';
 
@@ -13,7 +13,7 @@ import PaymentService from '../../services/paymentService';
  * - Distance calculation and display
  * - Responsive design with loading states
  */
-const AnonymousBookingForm = () => {
+const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
   const [libraries, setLibraries] = useState([]);
   const [selectedLibrary, setSelectedLibrary] = useState('');
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
@@ -44,6 +44,18 @@ const AnonymousBookingForm = () => {
       fetchLibraries();
     }
   }, [userLocation, locationPermission]);
+
+  useEffect(() => {
+    if (!initialLibraryId || !libraries.length) return;
+    if (selectedLibrary) return;
+
+    const matchingLibrary = libraries.find((library) => library.id === initialLibraryId);
+    if (!matchingLibrary) return;
+
+    setSelectedLibrary(matchingLibrary.id);
+    setViewMode('dropdown');
+    fetchSubscriptionPlans(matchingLibrary.id);
+  }, [initialLibraryId, libraries, selectedLibrary]);
 
   const getUserLocation = () => {
     if (!navigator.geolocation) {
