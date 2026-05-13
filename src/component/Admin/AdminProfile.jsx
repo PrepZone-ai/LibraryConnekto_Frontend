@@ -933,7 +933,7 @@ const AdminProfile = () => {
           </div>
 
           {/* Bank & Payout Details */}
-          <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
+          <div id="bank-details-section" className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
             <h3 className="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

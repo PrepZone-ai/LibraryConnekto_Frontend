@@ -6,6 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import SelectRoleModal from '../Auth/SelectRoleModal';
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import DownloadAppButton from '../common/DownloadAppButton';
+import LibraryCard from '../Library/LibraryCard';
+import { apiClient } from '../../lib/api';
 import {
   AnalyticsIcon,
   BellIcon,
@@ -36,6 +38,9 @@ function Stat({ value, label }) {
 export default function Home() {
   const { selectedRole, isLoggedIn, setRole } = useAuth();
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [libraries, setLibraries] = useState([]);
+  const [loadingLibraries, setLoadingLibraries] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
   const navigate = useNavigate();
   const heroImages = [
     new URL('../../assets/Front.png', import.meta.url).href,
@@ -53,7 +58,60 @@ export default function Home() {
       disable: false,
       startEvent: 'DOMContentLoaded'
     });
+    
+    // Get user location and fetch libraries
+    getUserLocation();
   }, []);
+  
+  useEffect(() => {
+    if (userLocation || userLocation === null) {
+      fetchLibraries();
+    }
+  }, [userLocation]);
+  
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      setUserLocation(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+      },
+      (error) => {
+        console.log('Location access denied:', error);
+        setUserLocation(null);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
+      }
+    );
+  };
+  
+  const fetchLibraries = async () => {
+    try {
+      setLoadingLibraries(true);
+      let url = '/booking/libraries';
+      
+      if (userLocation) {
+        url += `?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}&radius=100`;
+      }
+      
+      const response = await apiClient.getAnonymous(url);
+      // Show only first 6 libraries for the section
+      setLibraries(response.slice(0, 6));
+    } catch (error) {
+      console.error('Error fetching libraries:', error);
+    } finally {
+      setLoadingLibraries(false);
+    }
+  };
 
   useEffect(() => {
     // Check if user has visited before and show role modal if needed
@@ -376,6 +434,72 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+      
+      {/* Registered Libraries Section */}
+      <section className="relative bg-gradient-to-br from-slate-900 via-purple-900/10 to-slate-800 py-24 z-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16" data-aos="fade-up">
+            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span>Explore Libraries</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
+              Find Your Perfect
+              <span className="block gradient-text">Study Space</span>
+            </h2>
+            <p className="text-lg sm:text-xl text-slate-300 font-medium max-w-3xl mx-auto">
+              {userLocation 
+                ? 'Libraries near you, sorted by distance. Choose the one that fits your needs.'
+                : 'Browse registered libraries and find the perfect study environment for you.'}
+            </p>
+          </div>
+
+          {loadingLibraries ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-400">Loading libraries...</p>
+              </div>
+            </div>
+          ) : libraries.length > 0 ? (
+            <div data-aos="fade-up" data-aos-delay="100">
+              {/* Grid Layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {libraries.map((library) => (
+                  <LibraryCard key={library.id} library={library} />
+                ))}
+              </div>
+              
+              {/* View All Button */}
+              <div className="text-center">
+                <button
+                  onClick={() => navigate('/libraries')}
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+                >
+                  View All Libraries
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <div className="w-20 h-20 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">No Libraries Found</h3>
+              <p className="text-slate-400 max-w-md mx-auto">
+                There are no registered libraries at the moment. Check back soon!
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

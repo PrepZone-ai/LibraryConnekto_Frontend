@@ -13,6 +13,7 @@ import StudentForgotPassword from './component/Auth/StudentForgotPassword'
 import AdminResetPassword from './component/Auth/AdminResetPassword'
 import EmailVerificationSuccess from './component/Auth/EmailVerificationSuccess'
 import EmailVerificationError from './component/Auth/EmailVerificationError'
+import LibraryDetails from './component/Library/LibraryDetails'
 
 // Admin Components
 import AdminDashboard from './component/Admin/AdminDashboard'
@@ -57,6 +58,7 @@ function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/library/:libraryId" element={<LibraryDetails />} />
 
             {/* Authentication Routes */}
             <Route path="/admin/auth" element={<AdminAuth />} />

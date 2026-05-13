@@ -20,6 +20,7 @@ import {
   ProgressRing,
   StatCardWithChart 
 } from '../common/Charts';
+import ProfileIncompleteAlert from './ProfileIncompleteAlert';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -295,6 +296,11 @@ const AdminDashboard = () => {
               <span>Add Students</span>
             </button>
           </div>
+
+          {/* Profile Incomplete Alert - Shows only when bank details are missing */}
+          {!adminDetailsLoading && adminDetails && (
+            <ProfileIncompleteAlert profileData={adminDetails} />
+          )}
 
           {/* Welcome Section for Empty State */}
           {stats.totalStudents === 0 && stats.totalSeats === 0 && (

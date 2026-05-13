@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
-import { lookupBankByIfsc } from '../../utils/ifscLookup';
+
 const AdminDetailsForm = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
@@ -25,15 +25,13 @@ const AdminDetailsForm = () => {
       { start: '19:00', end: '23:00', name: 'Night Shift' }
     ],
     referral_code: '',
-    bank_account_holder_name: '',
-    bank_account_number: '',
-    bank_ifsc_code: '',
-    bank_name: '',
-    bank_branch_name: ''
+    facility_images: [],
+    facility_description: ''
   });
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState('');
-  const [ifscLookupLoading, setIfscLookupLoading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageUrls, setImageUrls] = useState([]);
 
   useEffect(() => {
     if (userType !== 'admin') {
@@ -125,12 +123,12 @@ const AdminDetailsForm = () => {
               { start: '19:00', end: '23:00', name: 'Night Shift' }
             ],
           referral_code: response.referral_code || '',
-          bank_account_holder_name: response.bank_account_holder_name || '',
-          bank_account_number: response.bank_account_number || '',
-          bank_ifsc_code: response.bank_ifsc_code || '',
-          bank_name: response.bank_name || '',
-          bank_branch_name: response.bank_branch_name || ''
+          facility_images: response.facility_images || [],
+          facility_description: response.facility_description || ''
         });
+        if (response.facility_images && response.facility_images.length > 0) {
+          setImageUrls(response.facility_images);
+        }
       }
     } catch (error) {
       console.error('Error loading admin details:', error);
@@ -161,23 +159,77 @@ const AdminDetailsForm = () => {
     }));
   };
 
-  const handleIfscBlur = async () => {
-    const currentIfsc = (formData.bank_ifsc_code || '').trim().toUpperCase();
-    if (!currentIfsc) return;
-    try {
-      setIfscLookupLoading(true);
-      const result = await lookupBankByIfsc(currentIfsc);
-      setFormData((prev) => ({
-        ...prev,
-        bank_ifsc_code: result.ifsc,
-        bank_name: result.bankName || prev.bank_name,
-        bank_branch_name: result.branchName || prev.bank_branch_name,
-      }));
-    } catch (lookupError) {
-      setError(lookupError?.message || 'Could not fetch bank details from IFSC.');
-    } finally {
-      setIfscLookupLoading(false);
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+    
+    // Validate: max 5 images, current + new should not exceed 5
+    if (imageUrls.length + files.length > 5) {
+      setError('You can upload a maximum of 5 images');
+      return;
     }
+    
+    // Validate file types and sizes
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    for (const file of files) {
+      if (!validTypes.includes(file.type)) {
+        setError('Only JPEG, PNG, and WebP images are allowed');
+        return;
+      }
+      if (file.size > maxSize) {
+        setError('Each image must be less than 5MB');
+        return;
+      }
+    }
+    
+    try {
+      setUploadingImages(true);
+      setError('');
+      
+      const uploadedUrls = [];
+      
+      for (const file of files) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', file);
+        
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+          method: 'POST',
+          body: formDataUpload,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const data = await response.json();
+        uploadedUrls.push(data.url);
+      }
+      
+      const newImageUrls = [...imageUrls, ...uploadedUrls];
+      setImageUrls(newImageUrls);
+      setFormData(prev => ({
+        ...prev,
+        facility_images: newImageUrls
+      }));
+      
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      setError('Failed to upload images. Please try again.');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+  
+  const handleRemoveImage = (indexToRemove) => {
+    const newImageUrls = imageUrls.filter((_, index) => index !== indexToRemove);
+    setImageUrls(newImageUrls);
+    setFormData(prev => ({
+      ...prev,
+      facility_images: newImageUrls
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -187,29 +239,12 @@ const AdminDetailsForm = () => {
     setSuccess('');
 
     try {
-      const ifscValue = (formData.bank_ifsc_code || '').trim().toUpperCase();
-      const accountValue = (formData.bank_account_number || '').trim();
-      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-      const accountRegex = /^\d{9,18}$/;
-
       // Validate required fields
       if (!formData.admin_name.trim() || !formData.library_name.trim() || 
           !formData.mobile_no.trim() || !formData.address.trim() || 
           !formData.total_seats || formData.total_seats <= 0 ||
           !formData.latitude || !formData.longitude) {
         setError('Please fill in all required fields including location coordinates');
-        setLoading(false);
-        return;
-      }
-
-      if (ifscValue && !ifscRegex.test(ifscValue)) {
-        setError('Please enter a valid IFSC code (example: HDFC0001234).');
-        setLoading(false);
-        return;
-      }
-
-      if (accountValue && !accountRegex.test(accountValue)) {
-        setError('Please enter a valid account number (9 to 18 digits).');
         setLoading(false);
         return;
       }
@@ -228,12 +263,7 @@ const AdminDetailsForm = () => {
           formData.shift_timings
             .filter(timing => timing.start && timing.end)
             .map(timing => `${timing.start} - ${timing.end}`) : null,
-        referral_code: formData.referral_code.trim() || null,
-        bank_account_holder_name: formData.bank_account_holder_name.trim() || null,
-        bank_account_number: accountValue || null,
-        bank_ifsc_code: ifscValue || null,
-        bank_name: formData.bank_name.trim() || null,
-        bank_branch_name: formData.bank_branch_name.trim() || null
+        referral_code: formData.referral_code.trim() || null
       };
 
       // Submit admin details
@@ -599,97 +629,114 @@ const AdminDetailsForm = () => {
               </div>
             )}
 
-            {/* Bank Details Section */}
+            {/* Library Facility Section */}
             <div className="space-y-6">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-sm">5</span>
                 </div>
-                <h2 className="text-2xl font-semibold text-white">Bank Details (Optional)</h2>
+                <h2 className="text-2xl font-semibold text-white">Library Facilities</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label htmlFor="bank_account_holder_name" className="block text-sm font-medium text-white/90">
-                    Account Holder Name
-                  </label>
-                  <input
-                    type="text"
-                    id="bank_account_holder_name"
-                    name="bank_account_holder_name"
-                    value={formData.bank_account_holder_name}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
-                    placeholder="Enter account holder name"
-                  />
-                </div>
+              {/* Facility Images Upload */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-white/90">
+                  Facility Images (3-5 images recommended)
+                </label>
+                <p className="text-sm text-white/60 mb-3">
+                  Upload high-quality images showcasing your library facilities, study areas, and amenities
+                </p>
+                
+                {/* Image Preview Grid */}
+                {imageUrls.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    {imageUrls.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={`${import.meta.env.VITE_API_URL}${url}`}
+                          alt={`Facility ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-xl border-2 border-white/10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {imageUrls.length < 5 && (
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={uploadingImages}
+                      className="hidden"
+                      id="facility-images"
+                    />
+                    <label
+                      htmlFor="facility-images"
+                      className={`block w-full p-6 border-2 border-dashed border-white/20 rounded-xl text-center cursor-pointer hover:border-purple-500/50 hover:bg-white/5 transition-all duration-200 ${
+                        uploadingImages ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {uploadingImages ? (
+                        <div className="flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
+                          <span className="text-white/70">Uploading...</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <svg className="w-12 h-12 mx-auto mb-3 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-white/70 font-medium">Click to upload images</p>
+                          <p className="text-white/50 text-sm mt-2">
+                            {imageUrls.length > 0 
+                              ? `${5 - imageUrls.length} more ${5 - imageUrls.length === 1 ? 'image' : 'images'} can be uploaded`
+                              : 'JPEG, PNG, or WebP (Max 5MB each)'}
+                          </p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                )}
+                
+                <p className="text-xs text-white/50 mt-2">
+                  {imageUrls.length}/5 images uploaded
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="bank_ifsc_code" className="block text-sm font-medium text-white/90">
-                    IFSC Code
-                  </label>
-                  <input
-                    type="text"
-                    id="bank_ifsc_code"
-                    name="bank_ifsc_code"
-                    value={formData.bank_ifsc_code}
-                    onChange={handleInputChange}
-                    onBlur={handleIfscBlur}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200 uppercase"
-                    placeholder="Enter IFSC code"
-                  />
-                  {ifscLookupLoading && (
-                    <p className="text-blue-200 text-xs">Detecting bank and branch from IFSC...</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="bank_branch_name" className="block text-sm font-medium text-white/90">
-                    Branch Name
-                  </label>
-                  <input
-                    type="text"
-                    id="bank_branch_name"
-                    name="bank_branch_name"
-                    value={formData.bank_branch_name}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
-                    placeholder="Auto-filled from IFSC (editable)"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="bank_account_number" className="block text-sm font-medium text-white/90">
-                    Account Number
-                  </label>
-                  <input
-                    type="text"
-                    id="bank_account_number"
-                    name="bank_account_number"
-                    value={formData.bank_account_number}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
-                    placeholder="Enter account number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="bank_name" className="block text-sm font-medium text-white/90">
-                    Bank Name
-                  </label>
-                  <input
-                    type="text"
-                    id="bank_name"
-                    name="bank_name"
-                    value={formData.bank_name}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200"
-                    placeholder="Enter bank name"
-                  />
+              {/* Facility Description */}
+              <div className="space-y-2">
+                <label htmlFor="facility_description" className="block text-sm font-medium text-white/90">
+                  Facility Description (100-150 words)
+                </label>
+                <textarea
+                  id="facility_description"
+                  name="facility_description"
+                  value={formData.facility_description}
+                  onChange={handleInputChange}
+                  rows="6"
+                  maxLength="1000"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-white/50 transition-all duration-200 resize-none"
+                  placeholder="Describe your library facilities, study areas, amenities, WiFi availability, parking, air conditioning, etc. Make it engaging for prospective students!"
+                />
+                <div className="flex justify-between items-center text-xs">
+                  <p className="text-white/50">
+                    Highlight what makes your library unique and comfortable for students
+                  </p>
+                  <p className="text-white/60">
+                    {formData.facility_description.split(/\s+/).filter(word => word.length > 0).length} words
+                  </p>
                 </div>
               </div>
-              <p className="text-white/50 text-sm">
-                Add bank details during onboarding so payout setup can be completed in one pass. You can edit these later in your profile.
-              </p>
             </div>
 
             {/* Referral Code Section */}
