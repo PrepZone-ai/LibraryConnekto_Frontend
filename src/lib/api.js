@@ -1,4 +1,31 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+const DEFAULT_LOCAL_API = 'http://127.0.0.1:8000/api/v1';
+const DEFAULT_PROD_API = 'https://api.libraryconnekto.me/api/v1';
+
+/**
+ * API base URL:
+ * - VITE_API_BASE_URL when set (Vercel/production or explicit override)
+ * - npm run dev → local backend (unless .env.local overrides)
+ * - production build → live API
+ */
+export const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? DEFAULT_LOCAL_API : DEFAULT_PROD_API)
+).replace(/\/$/, '');
+
+/** Backend origin without /api/v1 — used for /uploads static files. */
+export const SERVER_BASE_URL = (
+  import.meta.env.VITE_SERVER_BASE_URL ||
+  API_BASE_URL.replace(/\/api\/v1\/?$/, '') ||
+  (import.meta.env.DEV ? 'http://127.0.0.1:8000' : 'https://api.libraryconnekto.me')
+).replace(/\/$/, '');
+
+/** Turn a stored path like /uploads/abc.jpg into a full URL for <img src>. */
+export const resolveMediaUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${SERVER_BASE_URL}${normalized}`;
+};
 
 const TOKEN_KEY = 'auth_token';
 
@@ -25,9 +52,17 @@ export const removeAuthToken = () => {
 export const redirectToLogin = () => {
   // Avoid redirect loops if already on a public auth page
   const currentPath = window.location.pathname;
-  const authPaths = ['/login', '/admin/login', '/register', '/forgot-password', '/setup-password'];
+  const authPaths = [
+    '/admin/auth',
+    '/admin/reset-password',
+    '/student/login',
+    '/student/forgot-password',
+    '/student/set-password',
+    '/auth/verify-success',
+    '/auth/verify-error',
+  ];
   if (!authPaths.some((p) => currentPath.startsWith(p))) {
-    window.location.href = '/admin/login';
+    window.location.href = '/admin/auth';
   }
 };
 

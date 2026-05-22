@@ -1,5 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../lib/api';
+import {
+  fetchPublicLibraries,
+  fetchPublicLibraryById,
+  findLibraryById,
+  libraryIdMatches,
+} from '../../lib/libraries';
 import PaymentService from '../../services/paymentService';
 
 /**
@@ -13,9 +19,15 @@ import PaymentService from '../../services/paymentService';
  * - Distance calculation and display
  * - Responsive design with loading states
  */
-const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
+const AnonymousBookingForm = ({
+  initialLibraryId = '',
+  initialLibraryName = '',
+}) => {
+  const lockedLibraryId = initialLibraryId ? String(initialLibraryId) : '';
+  const libraryLocked = Boolean(lockedLibraryId);
+
   const [libraries, setLibraries] = useState([]);
-  const [selectedLibrary, setSelectedLibrary] = useState('');
+  const [selectedLibrary, setSelectedLibrary] = useState(libraryLocked ? lockedLibraryId : '');
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -35,27 +47,48 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
     purpose: ''
   });
 
-  useEffect(() => {
-    getUserLocation();
-  }, []);
+  const lockedLibrary = useMemo(
+    () => (libraryLocked ? findLibraryById(libraries, lockedLibraryId) : null),
+    [libraryLocked, libraries, lockedLibraryId],
+  );
 
   useEffect(() => {
+    if (libraryLocked) {
+      loadLockedLibrary();
+      return;
+    }
+    getUserLocation();
+  }, [libraryLocked, lockedLibraryId]);
+
+  useEffect(() => {
+    if (libraryLocked) return;
     if (userLocation || locationPermission === 'denied') {
       fetchLibraries();
     }
-  }, [userLocation, locationPermission]);
+  }, [libraryLocked, userLocation, locationPermission]);
 
-  useEffect(() => {
-    if (!initialLibraryId || !libraries.length) return;
-    if (selectedLibrary) return;
-
-    const matchingLibrary = libraries.find((library) => library.id === initialLibraryId);
-    if (!matchingLibrary) return;
-
-    setSelectedLibrary(matchingLibrary.id);
-    setViewMode('dropdown');
-    fetchSubscriptionPlans(matchingLibrary.id);
-  }, [initialLibraryId, libraries, selectedLibrary]);
+  const loadLockedLibrary = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      let lib = findLibraryById(libraries, lockedLibraryId);
+      if (!lib) {
+        lib = await fetchPublicLibraryById(apiClient, lockedLibraryId, userLocation);
+      }
+      if (!lib) {
+        setError('Could not load the selected library. Please try again from the library page.');
+        return;
+      }
+      setLibraries([lib]);
+      setSelectedLibrary(String(lib.id));
+      await fetchSubscriptionPlans(String(lib.id));
+    } catch (err) {
+      console.error('Error loading library for booking:', err);
+      setError('Failed to load library details.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getUserLocation = () => {
     if (!navigator.geolocation) {
@@ -86,15 +119,7 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
   const fetchLibraries = async () => {
     try {
       setLoading(true);
-      let url = '/booking/libraries';
-      
-      // Add location parameters if available
-      if (userLocation) {
-        url += `?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}&radius=100`;
-      }
-      
-      // Use anonymous API call (no authentication required)
-      const response = await apiClient.getAnonymous(url);
+      const response = await fetchPublicLibraries(apiClient, userLocation);
       setLibraries(response);
     } catch (error) {
       console.error('Error fetching libraries:', error);
@@ -229,8 +254,13 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
         amount: 0,
         purpose: ''
       });
-      setSelectedLibrary('');
-      setSubscriptionPlans([]);
+      if (libraryLocked) {
+        setSelectedLibrary(lockedLibraryId);
+        fetchSubscriptionPlans(lockedLibraryId);
+      } else {
+        setSelectedLibrary('');
+        setSubscriptionPlans([]);
+      }
       
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -268,9 +298,11 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
       <div className="text-center mb-6 sm:mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">Book Your Seat</h2>
         <p className="text-slate-300 text-sm sm:text-base px-2">
-          Reserve your study seat at one of our partner libraries. No account required!
+          {libraryLocked
+            ? `Complete your booking request${initialLibraryName || lockedLibrary?.library_name ? ` for ${initialLibraryName || lockedLibrary.library_name}` : ''}. No account required!`
+            : 'Reserve your study seat at one of our partner libraries. No account required!'}
         </p>
-        {locationPermission === 'prompt' && (
+        {!libraryLocked && locationPermission === 'prompt' && (
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
             <p className="text-sm text-blue-300 flex items-center justify-center gap-2">
               <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,8 +321,32 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-        {/* Library Selection */}
+        {/* Library — pre-selected when opened from a library page */}
         <div>
+          {libraryLocked ? (
+            loading && !lockedLibrary ? (
+              <div className="p-4 bg-slate-700/50 rounded-xl text-center">
+                <p className="text-slate-400">Loading library...</p>
+              </div>
+            ) : lockedLibrary ? (
+              <div className="rounded-xl border border-purple-500/40 bg-purple-500/10 p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-purple-300 mb-2">
+                  Selected library
+                </p>
+                <h3 className="text-lg font-bold text-white mb-1">
+                  {lockedLibrary.library_name}
+                </h3>
+                <p className="text-sm text-slate-300 mb-3">{lockedLibrary.address}</p>
+                <p className="text-sm text-green-400">
+                  {lockedLibrary.total_seats - lockedLibrary.occupied_seats} seats available
+                  {lockedLibrary.distance != null &&
+                    ` · ${lockedLibrary.distance.toFixed(1)} km away`}
+                </p>
+                <input type="hidden" name="library_id" value={selectedLibrary} />
+              </div>
+            ) : null
+          ) : (
+            <>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <label className="block text-sm font-medium text-slate-300">
               Select Library *
@@ -348,7 +404,7 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
                   const availableSeats = library.total_seats - library.occupied_seats;
                   const distanceText = library.distance ? ` (${library.distance.toFixed(1)} km away)` : '';
                   return (
-                    <option key={library.id} value={library.id}>
+                    <option key={library.id} value={String(library.id)}>
                       {library.library_name} - {library.address}
                       {distanceText} - {availableSeats} seats available
                     </option>
@@ -365,13 +421,13 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
             <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
               {libraries.map((library) => {
                 const availableSeats = library.total_seats - library.occupied_seats;
-                const isSelected = selectedLibrary === library.id;
+                const isSelected = libraryIdMatches(selectedLibrary, library.id);
                 return (
                   <div
                     key={library.id}
                     onClick={() => {
-                      setSelectedLibrary(library.id);
-                      fetchSubscriptionPlans(library.id);
+                      setSelectedLibrary(String(library.id));
+                      fetchSubscriptionPlans(String(library.id));
                     }}
                     className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
                       isSelected
@@ -430,6 +486,8 @@ const AnonymousBookingForm = ({ initialLibraryId = '' }) => {
                 </p>
               )}
             </div>
+          )}
+            </>
           )}
         </div>
 

@@ -1,4 +1,4 @@
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import './App.css'
 import About from './component/About/About'
 import AdminAuth from './component/Auth/AdminAuth'
@@ -11,6 +11,7 @@ import StudentSetPassword from './component/Auth/StudentSetPassword'
 import AnonymousBookingPage from './component/Booking/AnonymousBookingPage'
 import Contact from './component/Contact/Contact'
 import Home from './component/Home/Home'
+import AdminDetailsGate from './component/Admin/AdminDetailsGate'
 import AppLayout from './component/Layout/AppLayout'
 import LibraryDetails from './component/Library/LibraryDetails'
 import LibraryList from './component/Library/LibraryList'
@@ -53,7 +54,8 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Layout Route - Contains Header and Footer */}
+          {/* Block admin app routes until /admin/details is complete */}
+          <Route element={<AdminDetailsGate />}>
           <Route element={<AppLayout />}>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
@@ -65,6 +67,8 @@ function App() {
             <Route path="/libraries" element={<LibraryList />} />
 
             {/* Authentication Routes */}
+            <Route path="/admin/login" element={<Navigate to="/admin/auth" replace />} />
+            <Route path="/login" element={<Navigate to="/admin/auth" replace />} />
             <Route path="/admin/auth" element={<AdminAuth />} />
             <Route path="/admin/reset-password" element={<AdminResetPassword />} />
             <Route path="/student/login" element={<StudentLogin />} />
@@ -106,6 +110,7 @@ function App() {
             <Route path="/student/attendance" element={<StudentAttendance />} />
             <Route path="/student/attendance-history" element={<AttendanceHistory />} />
             <Route path="/student/profile" element={<StudentProfile />} />
+          </Route>
           </Route>
         </Routes>
       </Router>

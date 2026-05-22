@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { apiClient } from '../../lib/api';
+import { bookingFromPaymentUrlSearch } from '../../lib/paymentPageFallback';
 import PaymentService from '../../services/paymentService';
 
 const PaymentConfirmation = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -22,14 +24,22 @@ const PaymentConfirmation = () => {
   }, [bookingId]);
 
   const fetchBookingDetails = async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      // Use anonymous API call since this is for anonymous bookings
       const response = await apiClient.getAnonymous(`/booking/booking-details/${bookingId}`);
       setBooking(response);
-    } catch (error) {
-      console.error('Error fetching booking details:', error);
-      setError('Failed to load booking details. Please check if the booking ID is valid.');
+      return;
+    } catch (apiError) {
+      console.error('Error fetching booking details:', apiError);
+      const fallback = bookingFromPaymentUrlSearch(bookingId, location.search);
+      if (fallback && fallback.amount > 0) {
+        setBooking(fallback);
+        return;
+      }
+      setError(
+        'Failed to load booking details. The payment link may be outdated — ask the library to resend the approval email, or try again later.'
+      );
     } finally {
       setLoading(false);
     }

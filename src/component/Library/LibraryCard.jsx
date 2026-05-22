@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { resolveMediaUrl } from '../../lib/api';
 
 const LibraryCard = ({ library }) => {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ const LibraryCard = ({ library }) => {
   
   // Get the first image or use a placeholder
   const primaryImage = library.facility_images && library.facility_images.length > 0
-    ? `${import.meta.env.VITE_API_URL}${library.facility_images[0]}`
+    ? resolveMediaUrl(library.facility_images[0])
     : new URL('../../assets/Lib.jpeg', import.meta.url).href;
   
   // Truncate description to 80 characters

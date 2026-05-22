@@ -119,7 +119,8 @@ export const AuthProvider = ({ children }) => {
           };
         } catch (error) {
           console.error("Failed to fetch admin details:", error);
-          return { success: true, needsAdminDetails: true };
+          // Let AdminDetailsGate decide after React Query loads; avoid sending complete admins to setup on transient errors
+          return { success: true, needsAdminDetails: false };
         }
       }
       

@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { apiClient } from '../../lib/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient, resolveMediaUrl } from '../../lib/api';
+import { queryKeys, useAdminDetails } from '../../lib/queries';
 
 const AdminDetailsForm = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const { user, userType } = useAuth();
+  const { data: adminDetails, isSuccess: adminDetailsLoaded } = useAdminDetails({
+    enabled: userType === 'admin',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -38,13 +45,19 @@ const AdminDetailsForm = () => {
       navigate('/admin/auth');
       return;
     }
-    
+
     // Load existing admin details if available
     loadAdminDetails();
-    
+
     // Automatically detect current location
     detectCurrentLocation();
-  }, [userType, navigate]);
+  }, [userType, navigate, searchParams]);
+
+  useEffect(() => {
+    if (userType === 'admin' && adminDetailsLoaded && adminDetails?.is_complete) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [userType, adminDetailsLoaded, adminDetails?.is_complete, navigate]);
 
   const detectCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -93,6 +106,7 @@ const AdminDetailsForm = () => {
   };
 
   const loadAdminDetails = async () => {
+    const refFromUrl = searchParams.get('referral')?.trim().toUpperCase() || '';
     try {
       const response = await apiClient.get('/admin/details');
       if (response) {
@@ -122,7 +136,7 @@ const AdminDetailsForm = () => {
               { start: '14:00', end: '18:00', name: 'Evening Shift' },
               { start: '19:00', end: '23:00', name: 'Night Shift' }
             ],
-          referral_code: response.referral_code || '',
+          referral_code: response.referral_code || refFromUrl || '',
           facility_images: response.facility_images || [],
           facility_description: response.facility_description || ''
         });
@@ -194,17 +208,21 @@ const AdminDetailsForm = () => {
       for (const file of files) {
         const formDataUpload = new FormData();
         formDataUpload.append('file', file);
-        
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
-          method: 'POST',
-          body: formDataUpload,
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to upload image');
+
+        let data;
+        try {
+          data = await apiClient.post('/admin/upload', formDataUpload);
+        } catch (uploadErr) {
+          const msg = (uploadErr?.message || '').toLowerCase();
+          if (msg.includes('not allowed') || msg.includes('404') || msg.includes('405')) {
+            data = await apiClient.post('/upload', formDataUpload);
+          } else {
+            throw uploadErr;
+          }
         }
-        
-        const data = await response.json();
+        if (!data?.url) {
+          throw new Error('Upload succeeded but no image URL was returned');
+        }
         uploadedUrls.push(data.url);
       }
       
@@ -263,12 +281,20 @@ const AdminDetailsForm = () => {
           formData.shift_timings
             .filter(timing => timing.start && timing.end)
             .map(timing => `${timing.start} - ${timing.end}`) : null,
-        referral_code: formData.referral_code.trim() || null
+        referral_code: formData.referral_code.trim() || null,
+        facility_images: formData.facility_images?.length ? formData.facility_images : null,
+        facility_description: formData.facility_description?.trim() || null,
       };
 
-      // Submit admin details
-      await apiClient.put('/admin/details', submitData);
-      
+      const saved = await apiClient.put('/admin/details', submitData);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.adminDetails });
+
+      if (!saved?.is_complete) {
+        setError('Please fill in all required library details before continuing.');
+        setLoading(false);
+        return;
+      }
+
       setSuccess('Admin details saved successfully!');
       setTimeout(() => {
         navigate('/admin/dashboard');
@@ -653,7 +679,7 @@ const AdminDetailsForm = () => {
                     {imageUrls.map((url, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={`${import.meta.env.VITE_API_URL}${url}`}
+                          src={resolveMediaUrl(url)}
                           alt={`Facility ${index + 1}`}
                           className="w-full h-32 object-cover rounded-xl border-2 border-white/10"
                         />
@@ -762,7 +788,7 @@ const AdminDetailsForm = () => {
                   placeholder="Enter referral code if any"
                 />
                 <p className="text-white/50 text-sm">
-                  If you were referred by someone, enter their referral code here
+                  If a friend referred you, enter their code here (also filled automatically from invite links)
                 </p>
               </div>
             </div>

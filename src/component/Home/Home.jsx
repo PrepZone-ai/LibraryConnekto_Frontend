@@ -8,6 +8,7 @@ import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import DownloadAppButton from '../common/DownloadAppButton';
 import LibraryCard from '../Library/LibraryCard';
 import { apiClient } from '../../lib/api';
+import { fetchPublicLibraries } from '../../lib/libraries';
 import {
   AnalyticsIcon,
   BellIcon,
@@ -39,7 +40,7 @@ export default function Home() {
   const { selectedRole, isLoggedIn, setRole } = useAuth();
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [libraries, setLibraries] = useState([]);
-  const [loadingLibraries, setLoadingLibraries] = useState(false);
+  const [loadingLibraries, setLoadingLibraries] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const navigate = useNavigate();
   const heroImages = [
@@ -58,53 +59,40 @@ export default function Home() {
       disable: false,
       startEvent: 'DOMContentLoaded'
     });
-    
-    // Get user location and fetch libraries
-    getUserLocation();
-  }, []);
-  
-  useEffect(() => {
-    if (userLocation || userLocation === null) {
-      fetchLibraries();
-    }
-  }, [userLocation]);
-  
-  const getUserLocation = () => {
+
+    // Resolve location once, then fetch — avoids showing all libraries then clearing
+    // when a radius-filtered refetch returns none nearby.
     if (!navigator.geolocation) {
-      setUserLocation(null);
+      fetchLibraries(null);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setUserLocation({
+        const location = {
           latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
+          longitude: position.coords.longitude,
+        };
+        setUserLocation(location);
+        fetchLibraries(location);
       },
       (error) => {
         console.log('Location access denied:', error);
         setUserLocation(null);
+        fetchLibraries(null);
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000
-      }
+        maximumAge: 300000,
+      },
     );
-  };
-  
-  const fetchLibraries = async () => {
+  }, []);
+
+  const fetchLibraries = async (location) => {
     try {
       setLoadingLibraries(true);
-      let url = '/booking/libraries';
-      
-      if (userLocation) {
-        url += `?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}&radius=100`;
-      }
-      
-      const response = await apiClient.getAnonymous(url);
-      // Show only first 6 libraries for the section
+      const response = await fetchPublicLibraries(apiClient, location);
       setLibraries(response.slice(0, 6));
     } catch (error) {
       console.error('Error fetching libraries:', error);

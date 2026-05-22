@@ -49,19 +49,12 @@ const AdminDashboard = () => {
       return;
     }
     
-    // Check if admin details are complete
-    if (!adminDetailsLoading && adminDetails) {
-      if (!adminDetails.is_complete) {
-        navigate('/admin/details');
-        return;
-      }
-      // Update user context with library name
-      if (adminDetails.library_name) {
-        setUser(prev => ({
-          ...prev,
-          library_name: adminDetails.library_name
-        }));
-      }
+    // Sync library name into auth context (setup redirect handled by AdminDetailsGate)
+    if (!adminDetailsLoading && adminDetails?.library_name) {
+      setUser((prev) => ({
+        ...prev,
+        library_name: adminDetails.library_name,
+      }));
     }
   }, [userType, navigate, adminDetails, adminDetailsLoading, setUser]);
 

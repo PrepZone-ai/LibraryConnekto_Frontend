@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../lib/api';
+import { fetchPublicLibraries } from '../../lib/libraries';
 import LibraryCard from './LibraryCard';
 
 const LibraryList = () => {
@@ -42,13 +43,7 @@ const LibraryList = () => {
     try {
       setLoading(true);
       setError('');
-      let url = '/booking/libraries';
-
-      if (location) {
-        url += `?latitude=${location.latitude}&longitude=${location.longitude}&radius=100`;
-      }
-
-      const response = await apiClient.getAnonymous(url);
+      const response = await fetchPublicLibraries(apiClient, location);
       setLibraries(response);
     } catch (err) {
       console.error('Error fetching libraries:', err);

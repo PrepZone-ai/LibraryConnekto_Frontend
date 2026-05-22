@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
+import { formatSubscriptionPlanOptionLabel } from '../../lib/subscriptionPlanLabel';
 const StudentManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -828,13 +829,24 @@ const StudentManagement = () => {
                     <select
                       required
                       value={selectedPlanId}
-                      onChange={(e) => setSelectedPlanId(e.target.value)}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setSelectedPlanId(id);
+                        const plan = plans.find((p) => String(p.id) === String(id));
+                        if (plan?.is_shift_plan) {
+                          setNewStudent((prev) => ({
+                            ...prev,
+                            is_shift_student: true,
+                            shift_time: (plan.shift_time || '').trim() || prev.shift_time,
+                          }));
+                        }
+                      }}
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                     >
                       <option value="" className="bg-slate-800">{loadingPlans ? 'Loading plans...' : 'Select a plan'}</option>
                       {plans.map((plan) => (
                         <option key={plan.id} value={plan.id} className="bg-slate-800">
-                          {plan.months} month{plan.months > 1 ? 's' : ''} - ₹{plan.discounted_amount || plan.amount}
+                          {formatSubscriptionPlanOptionLabel(plan)}
                         </option>
                       ))}
                     </select>
@@ -1053,7 +1065,7 @@ const StudentManagement = () => {
                 >
                   {plans.map((pl) => (
                     <option key={pl.id} value={pl.id} className="bg-slate-800">
-                      {pl.months} month(s) — ₹{pl.discounted_amount ?? pl.amount}
+                      {formatSubscriptionPlanOptionLabel(pl)}
                     </option>
                   ))}
                 </select>

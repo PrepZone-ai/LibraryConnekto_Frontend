@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
+import { buildReferralShareMessage, formatReferrerLabel, getReferralSignupUrl } from '../../lib/referralShare';
 import FrontImage from '../../assets/Front.png';
 import TransformImage from '../../assets/Transform.png';
 
 const AdminReferral = () => {
   const navigate = useNavigate();
-  const { userType, isLoggedIn } = useAuth();
+  const { userType, isLoggedIn, user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -95,7 +96,14 @@ const AdminReferral = () => {
   };
 
   const adminCode = codes.find(c => c.type === 'admin');
-  const shareText = adminCode ? `Register your study library with Library Connekto and transform your traditional system into a fully digital, smart, and efficient study library management platform. Use the referral code while signing up to streamline operations, manage records seamlessly, and elevate your library experience today.${adminCode.code}` : '';
+  const signupUrl = adminCode ? getReferralSignupUrl(adminCode.code) : '';
+  const shareText = adminCode
+    ? buildReferralShareMessage({
+        code: adminCode.code,
+        libraryName: user?.library_name || '',
+        referrerName: user?.admin_name || user?.name || '',
+      })
+    : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -141,18 +149,38 @@ const AdminReferral = () => {
                   <span>🚀</span>
                   <span>Referral Program</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white leading-tight">Invite admins or students and track your referrals</h2>
+                <h2 className="text-2xl font-bold text-white leading-tight">Invite library owners — share hassle-free payments & digital ops</h2>
+                <p className="text-white/60 text-sm mt-2 max-w-xl">
+                  Your message highlights payment collection without the usual chase, plus seats, students, and one dashboard.
+                </p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => navigator.clipboard.writeText(shareText)}
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(shareText);
+                    setMessage({ type: 'success', text: 'Invite message copied — paste in WhatsApp, email, or SMS.' });
+                  }}
                   disabled={!adminCode}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-white/20 disabled:opacity-50"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" className="text-white"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
-                  <span>Copy Share Text</span>
+                  <span>Copy invite message</span>
                 </button>
                 <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(signupUrl);
+                    setMessage({ type: 'success', text: 'Signup link copied.' });
+                  }}
+                  disabled={!adminCode}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-white/20 disabled:opacity-50"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" className="text-white"><path fill="currentColor" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path fill="currentColor" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  <span>Copy signup link</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => adminCode ? window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank') : null}
                   disabled={!adminCode}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 disabled:opacity-50"
@@ -162,6 +190,27 @@ const AdminReferral = () => {
                 </button>
               </div>
             </div>
+
+            {adminCode && shareText && (
+              <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-5">
+                <h3 className="text-white font-semibold mb-2">Preview — message your invitees will see</h3>
+                <p className="text-white/50 text-xs mb-3">
+                  Shared as <span className="text-white/80">{formatReferrerLabel({ referrerName: user?.admin_name || user?.name, libraryName: user?.library_name })}</span>
+                  {' · '}code <span className="font-mono text-emerald-300">{adminCode.code}</span> · signup link below
+                </p>
+                <pre className="whitespace-pre-wrap text-sm text-white/85 font-sans leading-relaxed bg-black/20 rounded-lg p-4 border border-white/10 max-h-64 overflow-y-auto">
+                  {shareText}
+                </pre>
+                <a
+                  href={signupUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-3 text-sm text-emerald-300 hover:text-emerald-200 underline break-all"
+                >
+                  {signupUrl}
+                </a>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <div className="rounded-xl p-6 bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-pink-600/20 border border-white/20">

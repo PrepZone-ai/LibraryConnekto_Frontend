@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { apiClient } from '../../lib/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys, useAdminDetails } from '../../lib/queries'
 
 // Icons
 const UserIcon = ({ className = "w-6 h-6" }) => (
@@ -31,7 +33,11 @@ const EyeOffIcon = ({ className = "w-5 h-5" }) => (
 
 export default function AdminAuth() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { login, resendAdminVerification, isLoggedIn, userType, loading: authLoading } = useAuth()
+  const { data: adminDetails, isLoading: adminDetailsLoading } = useAdminDetails({
+    enabled: isLoggedIn && userType === 'admin',
+  })
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
@@ -42,13 +48,22 @@ export default function AdminAuth() {
   const [message, setMessage] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
 
-  // ── If already logged in, redirect to correct dashboard ──
+  // ── If already logged in, redirect to dashboard or mandatory setup ──
   useEffect(() => {
-    if (authLoading) return // wait for auth to initialise
-    if (isLoggedIn) {
-      navigate(userType === 'admin' ? '/admin/dashboard' : '/student/dashboard', { replace: true })
+    if (authLoading) return
+    if (!isLoggedIn) return
+    if (userType === 'student') {
+      navigate('/student/dashboard', { replace: true })
+      return
     }
-  }, [isLoggedIn, userType, authLoading, navigate])
+    if (userType === 'admin') {
+      if (adminDetailsLoading) return
+      navigate(
+        adminDetails?.is_complete ? '/admin/dashboard' : '/admin/details',
+        { replace: true }
+      )
+    }
+  }, [isLoggedIn, userType, authLoading, adminDetails, adminDetailsLoading, navigate])
 
   useEffect(() => {
     // Check if mode is specified in URL
@@ -101,12 +116,19 @@ export default function AdminAuth() {
       if (mode === 'signin') {
         const result = await login(email, password, 'admin')
         if (result.success) {
-          // Check if admin needs to complete their details
-          if (result.needsAdminDetails) {
-            navigate('/admin/details')
-          } else {
-            navigate('/admin/dashboard')
+          let isComplete = result.adminDetails?.is_complete
+          if (isComplete === undefined) {
+            try {
+              const details = await queryClient.fetchQuery({
+                queryKey: queryKeys.adminDetails,
+                queryFn: () => apiClient.get('/admin/details'),
+              })
+              isComplete = details?.is_complete
+            } catch (_) {
+              isComplete = false
+            }
           }
+          navigate(isComplete ? '/admin/dashboard' : '/admin/details', { replace: true })
         } else {
           setError(result.error)
         }

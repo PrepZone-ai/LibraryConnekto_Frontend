@@ -3,9 +3,10 @@ import AnonymousBookingForm from './AnonymousBookingForm';
 
 const AnonymousBookingPage = () => {
   const navigate = useNavigate();
-  const { state } = useLocation();
-  const initialLibraryId = state?.libraryId || '';
-  const initialLibraryName = state?.libraryName || '';
+  const { state, search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const initialLibraryId = state?.libraryId || searchParams.get('libraryId') || '';
+  const initialLibraryName = state?.libraryName || searchParams.get('libraryName') || '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/10 to-slate-800 py-16">
@@ -26,7 +27,10 @@ const AnonymousBookingPage = () => {
           </h1>
         </div>
 
-        <AnonymousBookingForm initialLibraryId={initialLibraryId} />
+        <AnonymousBookingForm
+          initialLibraryId={initialLibraryId}
+          initialLibraryName={initialLibraryName}
+        />
       </div>
     </div>
   );

@@ -62,11 +62,12 @@ export const useStudentAttendance = () => {
 };
 
 // Admin query hooks
-export const useAdminDetails = () => {
+export const useAdminDetails = (options = {}) => {
   return useQuery({
     queryKey: queryKeys.adminDetails,
     queryFn: () => apiClient.get('/admin/details'),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    ...options,
   });
 };
 
