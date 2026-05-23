@@ -19,11 +19,27 @@ export const SERVER_BASE_URL = (
   (import.meta.env.DEV ? 'http://127.0.0.1:8000' : 'https://api.libraryconnekto.me')
 ).replace(/\/$/, '');
 
+const DEV_MEDIA_HOSTS = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i;
+
 /** Turn a stored path like /uploads/abc.jpg into a full URL for <img src>. */
 export const resolveMediaUrl = (path) => {
   if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  const normalized = path.startsWith('/') ? path : `/${path}`;
+  const raw = String(path).trim();
+  if (!raw) return '';
+
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    try {
+      const u = new URL(raw);
+      if (DEV_MEDIA_HOSTS.test(u.hostname) && u.pathname.startsWith('/uploads/')) {
+        return `${SERVER_BASE_URL}${u.pathname}`;
+      }
+    } catch {
+      /* keep raw */
+    }
+    return raw;
+  }
+
+  const normalized = raw.startsWith('/') ? raw : `/${raw}`;
   return `${SERVER_BASE_URL}${normalized}`;
 };
 

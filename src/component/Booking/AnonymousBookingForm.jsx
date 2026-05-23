@@ -197,53 +197,31 @@ const AnonymousBookingForm = ({
         mobile: formData.mobile
       });
 
-      // 2) Open Razorpay and pay Rs.1 token
-      const Razorpay = await PaymentService.initializePaymentGateway();
-      await new Promise((resolve, reject) => {
-        const rzp = new Razorpay({
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-          amount: order.amount,
-          currency: order.currency,
-          name: 'Library Connekto',
-          description: 'Seat booking token payment',
-          order_id: order.id,
-          method: {
-            upi: true,
-            card: true,
-            netbanking: true,
-            wallet: true
-          },
-          upi: { flow: 'intent' },
-          handler: async (response) => {
-            try {
-              // 3) Verify token payment and create pending booking
-              await PaymentService.verifyAnonymousBookingTokenPayment({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                library_id: selectedLibrary,
-                subscription_plan_id: null,
-                seat_id: null,
-                purpose: formData.purpose,
-                amount: formData.amount,
-              
-                // anonymous required fields
-                name: formData.name,
-                email: formData.email,
-                mobile: formData.mobile,
-                address: formData.address,
-                subscription_months: formData.subscription_months
-              });
-              setSuccess(true);
-              resolve();
-            } catch (e2) {
-              reject(e2);
-            }
-          },
-          modal: { ondismiss: () => reject(new Error('Payment cancelled')) }
-        });
-        rzp.open();
+      const bookingPayload = {
+        library_id: selectedLibrary,
+        subscription_plan_id: null,
+        seat_id: null,
+        purpose: formData.purpose,
+        amount: formData.amount,
+        name: formData.name,
+        email: formData.email,
+        mobile: formData.mobile,
+        address: formData.address,
+        subscription_months: formData.subscription_months,
+      };
+
+      // 2–3) Pay Rs.1 and finalize (handler + UPI poll fallback)
+      await PaymentService.payAnonymousBookingToken({
+        order,
+        bookingPayload,
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+          mobile: formData.mobile,
+        },
       });
+
+      setSuccess(true);
       // Reset form
       setFormData({
         name: '',
@@ -264,7 +242,7 @@ const AnonymousBookingForm = ({
       
     } catch (error) {
       console.error('Error creating booking:', error);
-      setError(error.response?.data?.detail || 'Failed to create booking. Please try again.');
+      setError(error?.message || 'Failed to create booking. Please try again.');
     } finally {
       setSubmitting(false);
     }
