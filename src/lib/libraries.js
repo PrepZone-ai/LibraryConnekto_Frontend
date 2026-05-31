@@ -39,13 +39,15 @@ export function withDistance(library, userLocation) {
 }
 
 /**
- * Public library list. When location is set, sorts/filters by radius on the server;
- * falls back to the full list if nothing is nearby (so pages do not go empty).
+ * Public library list.
+ * When location is set, keep distance sorting but use a wide radius so libraries
+ * are not unintentionally hidden on Home (for example, owner checking their own library).
  */
 export async function fetchPublicLibraries(apiClient, location = null) {
   let url = '/booking/libraries';
   if (location) {
-    url += `?latitude=${location.latitude}&longitude=${location.longitude}&radius=100`;
+    // Cover India-wide distance sorting while still receiving distance values.
+    url += `?latitude=${location.latitude}&longitude=${location.longitude}&radius=5000`;
   }
   let response = await apiClient.getAnonymous(url);
   if (location && response.length === 0) {

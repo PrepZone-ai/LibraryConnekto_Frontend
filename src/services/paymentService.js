@@ -164,6 +164,32 @@ class PaymentService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  /** Normalize Razorpay checkout success payloads (handler vs payment.success vs UPI). */
+  static extractRazorpayPaymentIds(response, fallbackOrderId = '') {
+    if (!response || typeof response !== 'object') {
+      return {
+        razorpay_order_id: fallbackOrderId || '',
+        razorpay_payment_id: '',
+        razorpay_signature: '',
+      };
+    }
+    const nested = response.razorpay_payment_id
+      ? response
+      : response.data || response.payload || response.payment || response;
+    return {
+      razorpay_order_id:
+        nested.razorpay_order_id ||
+        nested.order_id ||
+        response.razorpay_order_id ||
+        fallbackOrderId ||
+        '',
+      razorpay_payment_id:
+        nested.razorpay_payment_id || nested.payment_id || response.razorpay_payment_id || '',
+      razorpay_signature:
+        nested.razorpay_signature || nested.signature || response.razorpay_signature || '',
+    };
+  }
+
   /**
    * Razorpay UPI/QR often completes payment without firing the JS handler.
    * Poll order status, then finalize the booking on the server.
@@ -196,44 +222,70 @@ class PaymentService {
    */
   static async payAnonymousBookingToken({ order, bookingPayload, prefill = {} }) {
     const Razorpay = await this.initializePaymentGateway();
-    let settled = false;
+    let finished = false;
+    let completing = false;
 
-    const runOnce = async (task) => {
-      if (settled) return;
-      settled = true;
-      await task();
+    const runExclusive = async (task) => {
+      if (finished || completing) return false;
+      completing = true;
+      try {
+        await task();
+        finished = true;
+        return true;
+      } finally {
+        completing = false;
+      }
+    };
+
+    const finalizeAnonymousBooking = async (response) => {
+      const ids = this.extractRazorpayPaymentIds(response, order.id);
+      const hasCheckoutSignature =
+        ids.razorpay_order_id && ids.razorpay_payment_id && ids.razorpay_signature;
+
+      if (hasCheckoutSignature) {
+        await this.verifyAnonymousBookingTokenPayment({
+          ...bookingPayload,
+          ...ids,
+        });
+        return;
+      }
+
+      // UPI / QR / modern checkout — handler may omit signature fields; confirm via order API
+      await this.pollAndCompleteAnonymousBooking(order.id, bookingPayload, {
+        maxAttempts: 25,
+        intervalMs: 2000,
+      });
     };
 
     return new Promise((resolve, reject) => {
-      const succeed = () => {
-        if (!settled) return;
-        resolve();
-      };
+      const succeed = () => resolve();
       const fail = (err) => {
-        if (settled) {
-          reject(err);
-          return;
-        }
+        if (finished) return;
         reject(err);
       };
 
-      const completeWithHandler = async (response) => {
-        await runOnce(() =>
-          this.verifyAnonymousBookingTokenPayment({
-            ...bookingPayload,
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-          }),
-        );
-        succeed();
+      const completeAfterPayment = async (response) => {
+        try {
+          const ok = await runExclusive(() => finalizeAnonymousBooking(response));
+          if (ok) succeed();
+        } catch (err) {
+          fail(err);
+        }
       };
 
       const completeByPolling = async (pollOptions) => {
-        await runOnce(() =>
-          this.pollAndCompleteAnonymousBooking(order.id, bookingPayload, pollOptions),
-        );
-        succeed();
+        try {
+          const ok = await runExclusive(() =>
+            this.pollAndCompleteAnonymousBooking(order.id, bookingPayload, pollOptions),
+          );
+          if (ok) succeed();
+        } catch (err) {
+          fail(
+            new Error(
+              'If you already paid via UPI, wait a few seconds and click Submit again to confirm your booking.',
+            ),
+          );
+        }
       };
 
       const rzp = new Razorpay({
@@ -255,41 +307,19 @@ class PaymentService {
           wallet: true,
         },
         upi: { flow: 'intent' },
-        handler: async (response) => {
-          try {
-            await completeWithHandler(response);
-          } catch (err) {
-            fail(err);
-          }
+        handler: (response) => {
+          void completeAfterPayment(response);
         },
         modal: {
-          ondismiss: async () => {
-            if (settled) return;
-            try {
-              await completeByPolling({ maxAttempts: 20, intervalMs: 2000 });
-            } catch (err) {
-              settled = false;
-              fail(
-                new Error(
-                  'If you already paid via UPI, wait a few seconds and click Submit again to confirm your booking.',
-                ),
-              );
-            }
+          ondismiss: () => {
+            if (finished || completing) return;
+            void completeByPolling({ maxAttempts: 20, intervalMs: 2000 });
           },
         },
       });
 
-      rzp.on('payment.success', async (response) => {
-        try {
-          await completeWithHandler(response);
-        } catch (err) {
-          fail(err);
-        }
-      });
-
       rzp.on('payment.failed', (response) => {
-        if (settled) return;
-        settled = true;
+        if (finished || completing) return;
         const reason =
           response?.error?.description || response?.error?.reason || 'Payment failed';
         fail(new Error(reason));
