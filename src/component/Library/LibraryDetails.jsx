@@ -228,6 +228,11 @@ const LibraryDetails = () => {
                 src={images[selectedImageIndex]}
                 alt={`${library.library_name} — photo ${selectedImageIndex + 1}`}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  if (e.currentTarget.src !== PLACEHOLDER_IMAGE) {
+                    e.currentTarget.src = PLACEHOLDER_IMAGE;
+                  }
+                }}
               />
               {images.length > 1 && (
                 <>

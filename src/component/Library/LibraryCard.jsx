@@ -40,6 +40,11 @@ const LibraryCard = ({ library, animationIndex }) => {
           src={primaryImage}
           alt={library.library_name}
           className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+          onError={(e) => {
+            if (e.currentTarget.src !== ASSETS.lib) {
+              e.currentTarget.src = ASSETS.lib;
+            }
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
         
