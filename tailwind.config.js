@@ -25,7 +25,11 @@ export default {
         display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         "library-display": ["Space Grotesk", "ui-sans-serif", "system-ui", "sans-serif"],
-        "library-body": ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"]
+        "library-body": ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
+        "script-display": ["Kaushan Script", "cursive"],
+        "script-accent": ["Dancing Script", "cursive"],
+        "script-elegant": ["Great Vibes", "cursive"],
+        "heading-serif": ["Playfair Display", "serif"]
       },
       backgroundImage: {
         "hero-pattern": "url('/hero.jpg')"

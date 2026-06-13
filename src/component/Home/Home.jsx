@@ -1,5 +1,3 @@
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,6 +7,8 @@ import DownloadAppButton from '../common/DownloadAppButton';
 import LibraryCard from '../Library/LibraryCard';
 import { apiClient } from '../../lib/api';
 import { fetchPublicLibraries } from '../../lib/libraries';
+import { withScrollReveal } from '../../utils/scrollAnimations';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import {
   AnalyticsIcon,
   BellIcon,
@@ -27,9 +27,11 @@ import {
   UsersIcon
 } from '../Icons/Icons';
 
-function Stat({ value, label }) {
+function Stat({ value, label, index }) {
+  const baseClass = 'text-center group';
+  const props = index !== undefined ? withScrollReveal(index, baseClass, 120) : { className: baseClass };
   return (
-    <div className="text-center group">
+    <div {...props}>
       <div className="text-3xl sm:text-4xl md:text-5xl font-black gradient-text group-hover:scale-110 transition-transform duration-300">{value}</div>
       <div className="text-xs sm:text-sm md:text-base text-slate-300 font-medium mt-1">{label}</div>
     </div>
@@ -51,17 +53,6 @@ export default function Home() {
   ];
   
   useEffect(() => {
-    AOS.init({ 
-      duration: 700, 
-      once: true, 
-      offset: 80, 
-      easing: 'ease-out',
-      disable: false,
-      startEvent: 'DOMContentLoaded'
-    });
-
-    // Resolve location once, then fetch — avoids showing all libraries then clearing
-    // when a radius-filtered refetch returns none nearby.
     if (!navigator.geolocation) {
       fetchLibraries(null);
       return;
@@ -88,6 +79,8 @@ export default function Home() {
       },
     );
   }, []);
+
+  useScrollReveal([libraries, loadingLibraries, selectedRole]);
 
   const fetchLibraries = async (location) => {
     try {
@@ -153,7 +146,7 @@ export default function Home() {
 
       {/* Hero */}
       <section id="hero" className="relative isolate pt-16 md:pt-20 overflow-hidden min-h-screen flex items-start z-10">
-        <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 z-0">
           <div className="hero-carousel" aria-hidden="true">
             <div className="hero-carousel-track">
               {heroImages.concat(heroImages).map((src, index) => (
@@ -166,24 +159,27 @@ export default function Home() {
           <div className="absolute inset-0 hero-overlay" />
         </div>
 
+        <div className="hero-orb hero-orb-violet z-[1]" aria-hidden="true" />
+        <div className="hero-orb hero-orb-rose z-[1]" aria-hidden="true" />
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12 w-full relative z-20">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left side - Text content */}
             <div className="max-w-2xl relative z-30">
-              <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25 animate-pulse-glow">
-                <RocketIcon className="w-4 h-4" />
-                <span>Transform Your Library Today</span>
+              <span className="hero-badge mb-6">
+                <RocketIcon className="w-5 h-5 text-indigo-300 shrink-0" />
+                <span className="script-tagline">Transform Your Library Today</span>
               </span>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight tracking-tight text-white mb-6">
-                <span className="block gradient-text">Smart Library</span>
-                <span className="block gradient-text">Management</span>
-                <span className="block gradient-text">Made Simple</span>
+              <h1 className="hero-title script-display mb-6">
+                <span className="block">Smart Library</span>
+                <span className="block">Management</span>
+                <span className="block hero-title-accent">Made Simple</span>
               </h1>
-              <p className="mt-6 text-lg sm:text-xl md:text-2xl text-slate-300 font-medium leading-relaxed max-w-3xl">
+              <p className="mt-6 text-lg sm:text-xl md:text-2xl text-slate-400 font-medium leading-relaxed max-w-3xl">
                 Turn your library into a smart, profitable business with our all-in-one management platform.
               </p>
               <div className="mt-10 flex flex-col lg:flex-row items-center justify-center gap-4">
-                <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-sm font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300 min-w-[200px]">
+                <button onClick={handleAuthAction} className="group btn-hover hero-cta-primary inline-flex items-center justify-center rounded-2xl px-8 py-4 text-sm font-bold text-white hover:scale-105 transition-all duration-300 min-w-[200px]">
                   <span className="text-center">
                     {selectedRole === 'admin' ? 'Register Your Library' : 'Get Started'}
                   </span>
@@ -193,23 +189,23 @@ export default function Home() {
                 </button>
                 {!isLoggedIn && selectedRole ? (
                   selectedRole === 'admin' ? (
-                    <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 px-8 py-4 text-sm font-bold text-white hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 min-w-[140px]">
+                    <button onClick={handleAuthAction} className="group btn-hover hero-cta-secondary inline-flex items-center justify-center rounded-2xl px-8 py-4 text-sm font-bold hover:scale-105 transition-all duration-300 min-w-[140px]">
                       <span className="text-center">Sign In</span>
                     </button>
                   ) : (
-                    <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 px-8 py-4 text-sm font-bold text-white hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 min-w-[160px]">
+                    <a href="#book-seat" className="group btn-hover hero-cta-secondary inline-flex items-center justify-center rounded-2xl px-8 py-4 text-sm font-bold hover:scale-105 transition-all duration-300 min-w-[160px]">
                       <span className="text-center">Book Your Seat</span>
                     </a>
                   )
                 ) : (
-                  <a href="#book-seat" className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 px-8 py-4 text-sm font-bold text-white hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 min-w-[160px]">
+                  <a href="#book-seat" className="group btn-hover hero-cta-secondary inline-flex items-center justify-center rounded-2xl px-8 py-4 text-sm font-bold hover:scale-105 transition-all duration-300 min-w-[160px]">
                     <span className="text-center">Book Your Seat</span>
                   </a>
                 )}
                 <DownloadAppButton 
                   variant="secondary" 
                   size="large" 
-                  className="min-w-[160px] bg-slate-800/80 backdrop-blur-sm border border-purple-400/30 hover:bg-purple-500/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300"
+                  className="min-w-[160px] hero-cta-secondary hover:scale-105 transition-all duration-300"
                 />
               </div>
             </div>
@@ -217,24 +213,24 @@ export default function Home() {
             {/* Right side - India Map with Connected Libraries */}
             <div className="hidden md:block relative z-30">
               <div className="relative">
-                <div className="rounded-3xl glass p-4 sm:p-6 lg:p-8 shadow-2xl shadow-purple-500/10 bg-slate-800/30 backdrop-blur-sm">
+                <div className="rounded-3xl hero-visual-card p-4 sm:p-6 lg:p-8">
                   <svg viewBox="0 0 600 500" className="w-full h-full max-h-96 lg:max-h-none">
                     <defs>
                       <linearGradient id="indiaGrad1" x1="0" x2="1" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#a855f7"/>
-                        <stop offset="100%" stopColor="#ec4899"/>
+                        <stop offset="0%" stopColor="#818cf8"/>
+                        <stop offset="100%" stopColor="#f472b6"/>
                       </linearGradient>
                       <linearGradient id="indiaGrad2" x1="0" x2="1" y1="1" y2="0">
-                        <stop offset="0%" stopColor="#06b6d4"/>
-                        <stop offset="100%" stopColor="#a855f7"/>
+                        <stop offset="0%" stopColor="#6366f1"/>
+                        <stop offset="100%" stopColor="#a5b4fc"/>
                       </linearGradient>
                       <linearGradient id="indiaGrad3" x1="0" x2="1" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#f59e0b"/>
-                        <stop offset="100%" stopColor="#ec4899"/>
+                        <stop offset="0%" stopColor="#818cf8"/>
+                        <stop offset="100%" stopColor="#c4b5fd"/>
                       </linearGradient>
                       <linearGradient id="indiaGrad4" x1="0" x2="1" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981"/>
-                        <stop offset="100%" stopColor="#06b6d4"/>
+                        <stop offset="0%" stopColor="#6366f1"/>
+                        <stop offset="100%" stopColor="#f472b6"/>
                       </linearGradient>
                       <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -411,10 +407,10 @@ export default function Home() {
                     </circle>
                     
                     {/* Title */}
-                    <text x="300" y="50" textAnchor="middle" fill="url(#indiaGrad1)" fontSize="16" fontWeight="bold" opacity="0.9">
+                    <text x="300" y="50" textAnchor="middle" fill="#e0e7ff" fontSize="16" fontWeight="bold" opacity="0.95">
                       Library Connekto Network
                     </text>
-                    <text x="300" y="70" textAnchor="middle" fill="#94a3b8" fontSize="12" opacity="0.8">
+                    <text x="300" y="70" textAnchor="middle" fill="#94a3b8" fontSize="12" opacity="0.85">
                       Connecting Libraries Across India
                     </text>
                   </svg>
@@ -428,7 +424,7 @@ export default function Home() {
       {/* Registered Libraries Section */}
       <section className="relative bg-gradient-to-br from-slate-900 via-purple-900/10 to-slate-800 py-24 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-aos="fade-up">
+          <div className="text-center mb-16">
             <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -454,11 +450,11 @@ export default function Home() {
               </div>
             </div>
           ) : libraries.length > 0 ? (
-            <div data-aos="fade-up" data-aos-delay="100">
+            <div>
               {/* Grid Layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                {libraries.map((library) => (
-                  <LibraryCard key={library.id} library={library} />
+                {libraries.map((library, index) => (
+                  <LibraryCard key={library.id} library={library} animationIndex={index} />
                 ))}
               </div>
               
@@ -494,7 +490,7 @@ export default function Home() {
       {/* Getting Started Section */}
       <section className="relative bg-gradient-to-br from-slate-800 via-purple-900/20 to-slate-900 py-24 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative mb-20" data-aos="fade-up">
+          <div className="relative mb-20">
             {/* Background decorative elements */}
             <div className="absolute inset-0 -z-10">
               <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
@@ -502,12 +498,6 @@ export default function Home() {
             </div>
             
             <div className="text-center relative">
-              {/* Animated badge */}
-              <div className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-6 py-3 text-sm font-semibold text-purple-200 mb-8 shadow-lg shadow-purple-500/25 animate-pulse-glow">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-                <RocketIcon className="w-5 h-5" />
-                <span>Getting Started</span>
-              </div>
               
               {/* Main heading with enhanced styling */}
               <div className="mb-8">
@@ -549,7 +539,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16" data-aos="fade-up" data-aos-delay="100">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16">
             {[
               { 
                 step: '01', 
@@ -580,7 +570,13 @@ export default function Home() {
                 icon: ChartIcon
               },
             ].map((step, index) => (
-              <div key={step.step} className="group relative card-hover rounded-3xl glass p-8 shadow-lg shadow-purple-500/5 hover:shadow-2xl hover:shadow-purple-500/10">
+              <div
+                key={step.step}
+                {...withScrollReveal(
+                  index,
+                  'group relative card-hover rounded-3xl glass p-8 shadow-lg shadow-purple-500/5 hover:shadow-2xl hover:shadow-purple-500/10'
+                )}
+              >
                 <div className="absolute -top-4 -right-4 w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-lg shadow-lg">
                   {step.step}
                 </div>
@@ -595,13 +591,19 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-12" data-aos="fade-up" data-aos-delay="150">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-12">
             {[
               { title: 'Instant Setup', description: 'Get started in minutes, not days', icon: LightningIcon },
               { title: 'No Technical Skills Required', description: 'User-friendly interface for everyone', icon: TargetIcon },
               { title: '24/7 Support', description: 'We\'re here to help whenever you need', icon: SupportIcon },
             ].map((feature, index) => (
-              <div key={feature.title} className="group card-hover rounded-2xl glass p-8 hover:bg-slate-800/60 transition-all duration-300">
+              <div
+                key={feature.title}
+                {...withScrollReveal(
+                  index,
+                  'group card-hover rounded-2xl glass p-8 hover:bg-slate-800/60 transition-all duration-300'
+                )}
+              >
                 <feature.icon className="w-10 h-10 text-purple-400 mb-4 group-hover:scale-110 transition-transform duration-300" />
                 <div className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors duration-300">{feature.title}</div>
                 <p className="text-slate-300 font-medium">{feature.description}</p>
@@ -609,10 +611,13 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-center" data-aos="fade-up" data-aos-delay="200">
+          <div className="text-center">
             <h3 className="text-2xl font-bold text-white mb-4">Ready to Get Started?</h3>
-            <p className="text-slate-300 mb-8 max-w-2xl mx-auto">
-              Join hundreds of library owners who have already transformed their business. Start your free trial today and see the difference in just 30 minutes.
+            <p className="script-promo mb-8 max-w-3xl mx-auto">
+              Join hundreds of library owners who have already transformed their business.
+              <span className="block script-promo-accent mt-3">
+                Start your free trial today and see the difference in just 30 minutes.
+              </span>
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button onClick={handleAuthAction} className="btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40">
@@ -631,7 +636,7 @@ export default function Home() {
         /* Book Your Seat Section - Show for student role or no role selected */
         <section id="book-seat" className="relative bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-800 py-24 z-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16" data-aos="fade-up">
+            <div className="text-center mb-16">
               <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -648,7 +653,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div data-aos="fade-up" data-aos-delay="100">
+            <div>
               <AnonymousBookingForm />
             </div>
           </div>
@@ -657,14 +662,16 @@ export default function Home() {
         /* Ready to Get Started Section - Show for admin role */
         <section className="relative bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-800 py-24 z-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16" data-aos="fade-up">
+            <div className="text-center mb-16">
               <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
                 <RocketIcon className="w-4 h-4" />
                 <span>Ready to Get Started?</span>
               </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
-                Join hundreds of library owners who have already transformed their business. 
-                <span className="block gradient-text">Start your free trial today and see the difference in just 30 minutes.</span>
+              <h2 className="script-promo max-w-4xl mx-auto mb-6">
+                Join hundreds of library owners who have already transformed their business.
+                <span className="block script-promo-accent mt-4">
+                  Start your free trial today and see the difference in just 30 minutes.
+                </span>
               </h2>
               <p className="text-lg sm:text-xl text-slate-300 font-medium max-w-3xl mx-auto mb-8">
                 Transform your library into a smart, profitable business with our all-in-one management platform.
@@ -685,22 +692,22 @@ export default function Home() {
       {/* Powerful Features Section */}
       <section className="relative bg-gradient-to-br from-slate-900 via-purple-900/10 to-slate-800 py-32 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20" data-aos="fade-up">
+          <div className="text-center mb-20">
             <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <RocketIcon className="w-4 h-4" />
               <span>Powerful Features</span>
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
-              Everything You Need to
-              <span className="block gradient-text">Manage Your Library</span>
-            </h2>
+                <h2 className="heading-serif mb-6">
+                  <span className="block">Everything You Need to</span>
+                  <span className="block heading-serif-accent mt-1">Manage Your Library</span>
+                </h2>
             <p className="text-lg sm:text-xl text-slate-300 font-medium max-w-3xl mx-auto">
               From student management to revenue analytics, our comprehensive platform provides all the tools you need to run a modern, efficient library business.
             </p>
           </div>
 
           {/* Modern Timeline/List Layout */}
-          <div className="max-w-5xl mx-auto mb-20" data-aos="fade-up" data-aos-delay="100">
+          <div className="max-w-5xl mx-auto mb-20">
             <div className="space-y-8">
               {[
                 { 
@@ -758,7 +765,7 @@ export default function Home() {
                   color: 'from-rose-500 to-pink-500'
                 },
               ].map((feature, index) => (
-                <div key={feature.title} className="group relative">
+                <div key={feature.title} {...withScrollReveal(index, 'group relative', 100, true)}>
                   <div className="flex items-start gap-6 p-6 rounded-2xl hover:bg-slate-800/30 transition-all duration-300 border border-slate-700/30 hover:border-slate-600/50">
                     {/* Icon with gradient background */}
                     <div className={`flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
@@ -798,7 +805,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="text-center pt-8" data-aos="fade-up" data-aos-delay="150">
+          <div className="text-center pt-8">
             <h3 className="text-2xl font-bold text-white mb-6">Ready to Transform Your Library?</h3>
             <p className="text-slate-300 mb-10 max-w-2xl mx-auto text-lg">
               Join hundreds of library owners who have already modernized their operations with our platform.
@@ -833,7 +840,7 @@ export default function Home() {
       {/* Success Stories Section */}
       <section className="relative bg-gradient-to-br from-slate-800 via-purple-900/20 to-slate-900 py-24 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-aos="fade-up">
+          <div className="text-center mb-16">
             <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <QuoteIcon className="w-4 h-4" />
               <span>Success Stories</span>
@@ -846,7 +853,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-16" data-aos="fade-up" data-aos-delay="100">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-16">
             {[
               { 
                 name: 'Rajesh Kumar', 
@@ -867,7 +874,13 @@ export default function Home() {
                 quote: 'Managing multiple library locations was a nightmare before Library Connekto. Now I can monitor all my branches from a single dashboard. The automated billing and payment reminders have reduced my workload significantly.'
               },
             ].map((testimonial, index) => (
-              <div key={testimonial.name} className="group card-hover rounded-2xl glass p-8 shadow-lg shadow-purple-500/5 hover:shadow-2xl hover:shadow-purple-500/10">
+              <div
+                key={testimonial.name}
+                {...withScrollReveal(
+                  index,
+                  'group card-hover rounded-2xl glass p-8 shadow-lg shadow-purple-500/5 hover:shadow-2xl hover:shadow-purple-500/10'
+                )}
+              >
                 <QuoteIcon className="w-8 h-8 text-purple-400 mb-6" />
                 <p className="text-slate-300 font-medium leading-relaxed mb-6">"{testimonial.quote}"</p>
                 <div className="flex items-center gap-4">
@@ -884,10 +897,10 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-3" data-aos="fade-up" data-aos-delay="150">
-            <Stat value="500+" label="Happy Customers" />
-            <Stat value="4.9/5" label="Average Rating" />
-            <Stat value="99.9%" label="Uptime Guarantee" />
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-3">
+            <Stat value="500+" label="Happy Customers" index={0} />
+            <Stat value="4.9/5" label="Average Rating" index={1} />
+            <Stat value="99.9%" label="Uptime Guarantee" index={2} />
           </div>
         </div>
       </section>
@@ -902,11 +915,11 @@ export default function Home() {
         </div>
         
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center" data-aos="fade-up">
+          <div className="text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-6 py-3 text-sm font-semibold text-purple-200 mb-8 shadow-lg shadow-purple-500/25">
-              <RocketIcon className="w-4 h-4" />
-              <span>Transform Your Library Today</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-6 py-3 mb-8 shadow-lg shadow-purple-500/25">
+              <RocketIcon className="w-5 h-5 text-indigo-300 shrink-0" />
+              <span className="script-tagline text-purple-100">Transform Your Library Today</span>
             </div>
             
             {/* Main Heading */}
@@ -922,7 +935,7 @@ export default function Home() {
             </p>
             
             {/* Features Grid */}
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16 max-w-6xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16 max-w-6xl mx-auto">
               {[
                 { 
                   icon: '✓', 
@@ -945,7 +958,7 @@ export default function Home() {
                   description: 'Seamless data transfer from existing systems' 
                 }
               ].map((feature, index) => (
-                <div key={index} className="group relative h-full">
+                <div key={index} {...withScrollReveal(index, 'group relative h-full', 100)}>
                   <div className="rounded-2xl glass p-6 text-center hover:bg-slate-800/40 transition-all duration-300 border border-slate-700/50 hover:border-purple-400/30 h-full min-h-[220px] flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                       {feature.icon}
@@ -962,7 +975,7 @@ export default function Home() {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-16" data-aos="fade-up" data-aos-delay="150">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-16">
               <button onClick={handleAuthAction} className="group btn-hover inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 sm:px-8 lg:px-10 py-4 sm:py-5 text-lg sm:text-xl font-bold text-white shadow-2xl shadow-purple-500/25 hover:shadow-3xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300">
                 <RocketIcon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 group-hover:rotate-12 transition-transform duration-300" />
                 {selectedRole === 'admin' ? 'Register Your Library' : 'Start Your Free Trial'}
@@ -997,7 +1010,7 @@ export default function Home() {
             </div>
 
             {/* Trust Indicators */}
-            <div className="text-center" data-aos="fade-up" data-aos-delay="250">
+            <div className="text-center">
               <p className="text-slate-400 font-semibold mb-4 text-lg">Trusted by library owners across India</p>
               <div className="flex items-center justify-center gap-3">
                 <div className="flex items-center gap-1">

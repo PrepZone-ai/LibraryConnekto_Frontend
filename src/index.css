@@ -1,8 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Kaushan+Script&family=Manrope:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Dark gray canvas — soft slate, not pure black */
+  --app-bg-from: #1a1f2b;
+  --app-bg-via: #252b38;
+  --app-bg-to: #1a1f2b;
+  --app-surface: #2a3140;
+
+  /* Text tuned for readability on dark canvas */
+  --app-text-primary: #f1f5f9;
+  --app-text-secondary: #94a3b8;
+  --app-text-muted: #64748b;
+}
 
 /* Global resets for full-bleed Tailwind layout */
 html, body, #root {
@@ -10,8 +23,36 @@ html, body, #root {
   overflow-x: hidden; /* Prevent horizontal scroll */
 }
 body {
-  @apply antialiased text-white bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900;
-  min-height: 100vh;
+  @apply antialiased min-h-screen;
+  color: var(--app-text-primary);
+  background: linear-gradient(to bottom right, var(--app-bg-from), var(--app-bg-via), var(--app-bg-to));
+  background-attachment: fixed;
+}
+
+@layer components {
+  .app-page-bg {
+    @apply min-h-screen flex flex-col;
+    color: var(--app-text-primary);
+    background: transparent;
+  }
+
+  /* Page components render as direct children of AppLayout <main> */
+  main.flex-1 > div.min-h-screen {
+    background: transparent !important;
+    background-image: none !important;
+  }
+
+  /* AdminDetailsGate loading screens render outside <main> */
+  #root > div.min-h-screen.bg-slate-900 {
+    background: transparent !important;
+    background-image: none !important;
+  }
+
+  /* Marketing sections — unify purple-tinted blocks to the same dark gray canvas */
+  section[class*="from-slate-900"][class*="to-slate-800"],
+  section[class*="from-slate-800"][class*="to-slate-900"] {
+    background: linear-gradient(to bottom right, var(--app-bg-from), var(--app-bg-via), var(--app-bg-to)) !important;
+  }
 }
 
 /* Custom animations and effects */
@@ -134,8 +175,16 @@ body {
 }
 
 /* Gradient overlay helper used on hero */
-.hero-overlay {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(88, 28, 135, 0.8) 60%, rgba(15, 23, 42, 0.95) 100%);
+#hero .hero-overlay {
+  background:
+    radial-gradient(ellipse 85% 65% at 15% 35%, rgba(99, 102, 241, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 88% 25%, rgba(244, 114, 182, 0.08) 0%, transparent 50%),
+    linear-gradient(
+      105deg,
+      rgba(26, 31, 43, 0.72) 0%,
+      rgba(26, 31, 43, 0.55) 42%,
+      rgba(37, 43, 56, 0.65) 100%
+    );
   z-index: 1;
 }
 
@@ -143,6 +192,7 @@ body {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  z-index: 0;
 }
 
 .hero-carousel-track {
@@ -162,7 +212,174 @@ body {
   height: 100%;
   width: 100%;
   object-fit: cover;
-  filter: saturate(1.1) contrast(1.05);
+  filter: saturate(0.85) brightness(0.75) contrast(1.05);
+}
+
+/* Hero ambient glow orbs */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.hero-orb-violet {
+  width: min(420px, 55vw);
+  height: min(420px, 55vw);
+  top: 15%;
+  left: -8%;
+  background: rgba(99, 102, 241, 0.18);
+}
+
+.hero-orb-rose {
+  width: min(320px, 40vw);
+  height: min(320px, 40vw);
+  top: 55%;
+  right: 5%;
+  background: rgba(244, 114, 182, 0.12);
+}
+
+/* Hero badge pill */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 9999px;
+  padding: 0.4rem 1.35rem 0.55rem;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.12);
+}
+
+/* Brush-script typography (Italy-style calligraphy) */
+.script-display {
+  font-family: 'Kaushan Script', cursive;
+  font-weight: 400;
+  font-size: clamp(2.75rem, 7vw, 5.25rem);
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45);
+}
+
+.script-tagline {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  line-height: 1.15;
+  color: #e0e7ff;
+}
+
+.script-promo {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 600;
+  font-size: clamp(1.65rem, 3.2vw, 2.5rem);
+  line-height: 1.45;
+  color: var(--app-text-primary);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.script-promo-accent {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: clamp(1.85rem, 3.6vw, 2.85rem);
+  line-height: 1.4;
+  background: linear-gradient(135deg, #e0e7ff 0%, #a5b4fc 35%, #f9a8d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.25));
+}
+
+/* Features section — elegant serif display */
+.heading-serif {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-size: clamp(2rem, 4.5vw, 3.75rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--app-text-primary);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+.heading-serif-accent {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: clamp(2.35rem, 5.2vw, 4.35rem);
+  line-height: 1.12;
+  background: linear-gradient(135deg, #fde68a 0%, #f472b6 48%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 10px rgba(244, 114, 182, 0.22));
+}
+
+/* Journey section — flowing elegant script */
+.script-elegant {
+  font-family: 'Great Vibes', cursive;
+  font-weight: 400;
+  font-size: clamp(2.75rem, 6.5vw, 5.25rem);
+  line-height: 1.25;
+  color: var(--app-text-primary);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+}
+
+.script-elegant-accent {
+  font-family: 'Great Vibes', cursive;
+  font-weight: 400;
+  font-size: clamp(3rem, 7.5vw, 5.75rem);
+  line-height: 1.15;
+  background: linear-gradient(135deg, #ddd6fe 0%, #f0abfc 45%, #7dd3fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 12px rgba(167, 139, 250, 0.28));
+}
+
+/* Hero heading — script body + gradient accent line */
+.hero-title {
+  color: var(--app-text-primary);
+}
+
+.hero-title-accent {
+  background: linear-gradient(135deg, #e0e7ff 0%, #a5b4fc 40%, #f9a8d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hero primary CTA */
+.hero-cta-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.35);
+}
+
+.hero-cta-primary:hover {
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.45);
+}
+
+/* Hero secondary buttons */
+.hero-cta-secondary {
+  background: rgba(42, 49, 64, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: var(--app-text-primary);
+  backdrop-filter: blur(8px);
+}
+
+.hero-cta-secondary:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
+/* Hero network visual card */
+.hero-visual-card {
+  background: rgba(42, 49, 64, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(12px);
 }
 
 /* Ensure hero text content is always visible */
@@ -177,16 +394,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #2a3140;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #a855f7, #ec4899);
+  background: #404040;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #9333ea, #db2777);
+  background: #525252;
 }
 
 /* Chat-specific scrollbar styling */
@@ -219,12 +436,12 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #a855f7, #ec4899);
+  background: #404040;
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #9333ea, #db2777);
+  background: #525252;
 }
 
 /* Line clamp utility for text truncation */
@@ -254,9 +471,9 @@ body {
 
 /* Glass morphism effect */
 .glass {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(42, 49, 64, 0.72);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 /* Neon glow effect */
@@ -269,14 +486,12 @@ body {
   text-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
 }
 
-/* Gradient text effect */
+/* Gradient text effect — static gradient, no sliding animation */
 .gradient-text {
   background: linear-gradient(135deg, #a855f7, #ec4899, #06b6d4);
-  background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmer 3s ease-in-out infinite;
 }
 
 /* Card hover effects */
@@ -370,19 +585,32 @@ section .mx-auto {
   z-index: 30;
 }
 
-/* AOS fallback - ensure content is visible even if AOS fails */
-[data-aos] {
-  opacity: 1 !important;
-  transform: none !important;
-}
-
-/* Only apply AOS animations when AOS is properly loaded */
-.aos-init [data-aos] {
+/* Scroll reveal — alternating slide from left/right on scroll */
+.scroll-reveal {
   opacity: 0;
-  transform: translateY(30px);
+  transition:
+    opacity 0.65s ease-out,
+    transform 0.65s ease-out;
+  will-change: opacity, transform;
 }
 
-.aos-animate [data-aos] {
+.scroll-reveal-left {
+  transform: translateX(-56px);
+}
+
+.scroll-reveal-right {
+  transform: translateX(56px);
+}
+
+.scroll-reveal.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

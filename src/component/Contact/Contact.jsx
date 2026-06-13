@@ -1,7 +1,7 @@
-import AOS from 'aos';
-import 'aos/dist/aos.css';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import DownloadAppButton from '../common/DownloadAppButton';
+import useScrollReveal from '../../hooks/useScrollReveal';
+import { withScrollReveal } from '../../utils/scrollAnimations';
 import {
     SupportIcon
 } from '../Icons/Icons';
@@ -38,15 +38,13 @@ const CheckIcon = ({ className = "w-5 h-5" }) => (
   </svg>
 );
 
-function ContactMethodCard({ icon: Icon, title, status, description, contact, timing, note, comingSoon = false, delay = 0 }) {
+function ContactMethodCard({ icon: Icon, title, status, description, contact, timing, note, comingSoon = false, animationIndex = 0 }) {
+  const cardClass = `bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group relative ${
+    comingSoon ? 'opacity-75' : ''
+  }`;
+
   return (
-    <div 
-      className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group relative ${
-        comingSoon ? 'opacity-75' : ''
-      }`}
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
+    <div {...withScrollReveal(animationIndex, cardClass, 100)}>
       {comingSoon && (
         <div className="absolute -top-3 right-4">
           <span className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -83,15 +81,11 @@ function ContactMethodCard({ icon: Icon, title, status, description, contact, ti
 }
 
 
-function FAQItem({ question, answer, delay = 0 }) {
+function FAQItem({ question, answer, animationIndex = 0 }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div 
-      className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden hover:border-purple-500/50 transition-all duration-300"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
+    <div {...withScrollReveal(animationIndex, 'bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden hover:border-purple-500/50 transition-all duration-300', 100)}>
       <button
         className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-slate-700/30 transition-colors duration-200"
         onClick={() => setIsOpen(!isOpen)}
@@ -116,9 +110,7 @@ function FAQItem({ question, answer, delay = 0 }) {
 }
 
 export default function Contact() {
-  useEffect(() => {
-    AOS.init({ duration: 700, once: true, offset: 80, easing: 'ease-out' });
-  }, []);
+  useScrollReveal();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -212,19 +204,19 @@ export default function Contact() {
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 w-full relative z-10">
           <div className="text-center max-w-4xl mx-auto relative z-20">
-            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25" data-aos="fade-up">
+            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <SupportIcon className="w-4 h-4" />
               <span>24/7 Support Coming Soon</span>
             </span>
             
-            <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white mb-6" data-aos="fade-up" data-aos-delay="100">
+            <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white mb-6">
               <span className="block gradient-text">Get in Touch</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-8" data-aos="fade-up" data-aos-delay="200">
+            <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-8">
               Have questions about Library Connekto? Our expert team is here to help you transform your library into a smart study hub.
             </p>
-            <div className="flex flex-col lg:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
+            <div className="flex flex-col lg:flex-row gap-4 justify-center">
               <DownloadAppButton variant="secondary" size="default" />
             </div>
           </div>
@@ -235,10 +227,10 @@ export default function Contact() {
       <section className="relative py-20 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">Choose Your Preferred Contact Method</span>
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Select the best way to reach us based on your needs
             </p>
           </div>
@@ -255,7 +247,7 @@ export default function Contact() {
                 timing={method.timing}
                 note={method.note}
                 comingSoon={method.comingSoon}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>
@@ -266,15 +258,15 @@ export default function Contact() {
       <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">Send us a Message</span>
             </h2>
-            <p className="text-xl text-slate-300" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300">
               Fill out the form below and we'll get back to you soon
             </p>
           </div>
           
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8" data-aos="fade-up" data-aos-delay="200">
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
@@ -359,10 +351,10 @@ export default function Contact() {
       <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">Quick FAQ</span>
             </h2>
-            <p className="text-xl text-slate-300" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300">
               Common questions and answers
             </p>
           </div>
@@ -373,7 +365,7 @@ export default function Contact() {
                 key={index}
                 question={faq.question}
                 answer={faq.answer}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>

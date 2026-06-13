@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { resolveMediaUrl } from '../../lib/api';
 
-const LibraryCard = ({ library }) => {
+import { withScrollReveal } from '../../utils/scrollAnimations';
+
+const LibraryCard = ({ library, animationIndex }) => {
   const navigate = useNavigate();
   
   const availableSeats = library.total_seats - library.occupied_seats;
@@ -21,9 +23,14 @@ const LibraryCard = ({ library }) => {
     navigate(`/library/${library.id}`);
   };
   
+  const cardClassName =
+    'group relative bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20 cursor-pointer transform hover:-translate-y-1';
+
   return (
-    <div 
-      className="group relative bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20 cursor-pointer transform hover:-translate-y-1"
+    <div
+      {...(animationIndex !== undefined
+        ? withScrollReveal(animationIndex, cardClassName)
+        : { className: cardClassName })}
       onClick={handleViewDetails}
     >
       {/* Image Section */}

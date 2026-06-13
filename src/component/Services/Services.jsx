@@ -1,8 +1,7 @@
-import { useEffect } from 'react';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import DownloadAppButton from '../common/DownloadAppButton';
+import useScrollReveal from '../../hooks/useScrollReveal';
+import { withScrollReveal } from '../../utils/scrollAnimations';
 import { 
   AnalyticsIcon, UsersIcon, SeatIcon, MoneyIcon, 
   SettingsIcon, ClockIcon, LightningIcon, TargetIcon, SupportIcon,
@@ -48,13 +47,12 @@ const CheckIcon = ({ className = "w-5 h-5" }) => (
   </svg>
 );
 
-function ServiceCard({ icon: Icon, title, description, features, popular = false, delay = 0 }) {
+function ServiceCard({ icon: Icon, title, description, features, popular = false, animationIndex = 0 }) {
+  const cardClass =
+    'relative group bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20';
+
   return (
-    <div 
-      className="relative group bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
+    <div {...withScrollReveal(animationIndex, cardClass, 100)}>
       {popular && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">
@@ -88,13 +86,9 @@ function ServiceCard({ icon: Icon, title, description, features, popular = false
   );
 }
 
-function FeatureCard({ icon: Icon, title, description, stat, delay = 0 }) {
+function FeatureCard({ icon: Icon, title, description, stat, animationIndex = 0 }) {
   return (
-    <div 
-      className="text-center group"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
+    <div {...withScrollReveal(animationIndex, 'text-center group', 100)}>
       <div className="p-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl w-fit mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
         <Icon className="w-8 h-8 text-purple-400" />
       </div>
@@ -108,9 +102,7 @@ function FeatureCard({ icon: Icon, title, description, stat, delay = 0 }) {
 }
 
 export default function Services() {
-  useEffect(() => {
-    AOS.init({ duration: 700, once: true, offset: 80, easing: 'ease-out' });
-  }, []);
+  useScrollReveal();
 
   const openRoleModal = () => window.dispatchEvent(new Event('open-role-modal'));
 
@@ -270,21 +262,21 @@ export default function Services() {
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 w-full relative z-10">
           <div className="text-center max-w-4xl mx-auto relative z-20">
-            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25" data-aos="fade-up">
+            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <RocketIcon className="w-4 h-4" />
               <span>Complete Library Solutions</span>
             </span>
             
-            <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white mb-6" data-aos="fade-up" data-aos-delay="100">
+            <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white mb-6">
               <span className="block gradient-text">Our Services</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-8" data-aos="fade-up" data-aos-delay="200">
+            <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-8">
               Comprehensive solutions for modern library management and enhanced student learning experiences. 
               Everything you need to transform your library into a smart, efficient business.
             </p>
             
-            <div className="flex flex-col lg:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
+            <div className="flex flex-col lg:flex-row gap-4 justify-center">
               <button onClick={openRoleModal} className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105">
                 Get Started Today
               </button>
@@ -301,10 +293,10 @@ export default function Services() {
       <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">Core Services</span>
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Everything you need for smart library management in one comprehensive platform
             </p>
           </div>
@@ -318,7 +310,7 @@ export default function Services() {
                 description={service.description}
                 features={service.features}
                 popular={service.popular}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>
@@ -329,10 +321,10 @@ export default function Services() {
       <section className="relative py-20 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">For Students</span>
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Enhance your study experience with smart tools designed for academic success
             </p>
           </div>
@@ -345,7 +337,7 @@ export default function Services() {
                 title={feature.title}
                 description={feature.description}
                 stat={feature.stat}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>
@@ -356,10 +348,10 @@ export default function Services() {
       <section className="relative py-20 bg-slate-900/50 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">For Library Owners</span>
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Powerful tools to grow your library business and maximize revenue potential
             </p>
           </div>
@@ -372,7 +364,7 @@ export default function Services() {
                 title={feature.title}
                 description={feature.description}
                 stat={feature.stat}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>
@@ -383,10 +375,10 @@ export default function Services() {
       <section className="relative py-20 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">Additional Features</span>
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Extra tools and features to enhance your overall library experience
             </p>
           </div>
@@ -399,7 +391,7 @@ export default function Services() {
                 title={feature.title}
                 description={feature.description}
                 stat={feature.stat}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>
@@ -409,13 +401,13 @@ export default function Services() {
       {/* CTA Section */}
       <section className="relative py-20 bg-gradient-to-r from-purple-900/50 to-pink-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
             <span className="gradient-text">Ready to Transform Your Library?</span>
           </h2>
-          <p className="text-xl text-slate-300 mb-8" data-aos="fade-up" data-aos-delay="100">
+          <p className="text-xl text-slate-300 mb-8">
             Join thousands of library owners who have already revolutionized their business with our platform.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="200">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={openRoleModal} className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105">
               Start Free Trial
             </button>
@@ -429,7 +421,7 @@ export default function Services() {
       {/* Book Your Seat Section */}
       <section id="book-seat" className="relative py-24 bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-800 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-aos="fade-up">
+          <div className="text-center mb-16">
             <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <SeatIcon className="w-4 h-4" />
               <span>Book Your Seat</span>
@@ -443,7 +435,7 @@ export default function Services() {
             </p>
           </div>
           
-          <div data-aos="fade-up" data-aos-delay="100">
+          <div>
             <AnonymousBookingForm />
           </div>
         </div>

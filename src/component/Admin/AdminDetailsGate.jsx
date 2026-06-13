@@ -72,7 +72,7 @@ export default function AdminDetailsGate() {
 
     return (
 
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="app-page-bg min-h-screen flex items-center justify-center">
 
         <p className="text-white/80 text-sm">Loading...</p>
 
@@ -102,7 +102,7 @@ export default function AdminDetailsGate() {
 
     return (
 
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="app-page-bg min-h-screen flex items-center justify-center">
 
         <p className="text-white/80 text-sm">Checking library setup...</p>
 

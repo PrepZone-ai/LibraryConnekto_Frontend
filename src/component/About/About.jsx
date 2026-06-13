@@ -1,7 +1,6 @@
-import AOS from 'aos';
-import 'aos/dist/aos.css';
-import { useEffect } from 'react';
 import DownloadAppButton from '../common/DownloadAppButton';
+import useScrollReveal from '../../hooks/useScrollReveal';
+import { withScrollReveal } from '../../utils/scrollAnimations';
 import {
   ClockIcon,
   RocketIcon,
@@ -42,13 +41,9 @@ const CheckIcon = ({ className = "w-5 h-5" }) => (
   </svg>
 );
 
-function StatCard({ icon: Icon, value, label, delay = 0 }) {
+function StatCard({ icon: Icon, value, label, animationIndex = 0 }) {
   return (
-    <div 
-      className="text-center group"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
+    <div {...withScrollReveal(animationIndex, 'text-center group', 100)}>
       <div className="p-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl w-fit mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
         <Icon className="w-8 h-8 text-purple-400" />
       </div>
@@ -58,13 +53,12 @@ function StatCard({ icon: Icon, value, label, delay = 0 }) {
   );
 }
 
-function ValueCard({ icon: Icon, title, description, features, delay = 0 }) {
+function ValueCard({ icon: Icon, title, description, features, animationIndex = 0 }) {
+  const cardClass =
+    'bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group';
+
   return (
-    <div 
-      className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group"
-      data-aos="fade-up"
-      data-aos-delay={delay}
-    >
+    <div {...withScrollReveal(animationIndex, cardClass, 100)}>
       <div className="flex items-center gap-4 mb-6">
         <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
           <Icon className="w-8 h-8 text-purple-400" />
@@ -91,9 +85,7 @@ function ValueCard({ icon: Icon, title, description, features, delay = 0 }) {
 }
 
 export default function About() {
-  useEffect(() => {
-    AOS.init({ duration: 700, once: true, offset: 80, easing: 'ease-out' });
-  }, []);
+  useScrollReveal();
 
   const stats = [
     { icon: UsersIcon, value: "500+", label: "Partner Libraries\nAcross India" },
@@ -146,22 +138,22 @@ export default function About() {
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 w-full relative z-10">
           <div className="text-center max-w-4xl mx-auto relative z-20">
-            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25" data-aos="fade-up">
+            <span className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 backdrop-blur-sm ring-1 ring-purple-400/30 px-4 py-2 text-sm font-medium text-purple-200 mb-6 shadow-lg shadow-purple-500/25">
               <RocketIcon className="w-4 h-4" />
               <span>Our Story</span>
             </span>
             
-            <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white mb-6" data-aos="fade-up" data-aos-delay="100">
+            <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white mb-6">
               <span className="block gradient-text">About Library</span>
               <span className="block gradient-text">Connekto</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-8" data-aos="fade-up" data-aos-delay="200">
+            <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed mb-8">
               Transforming India's library ecosystem through technology, connecting students with quality study spaces, 
               and empowering library owners with smart management solutions.
             </p>
             
-            <div className="flex flex-col lg:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
+            <div className="flex flex-col lg:flex-row gap-4 justify-center">
               <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105">
                 Join Our Mission
               </button>
@@ -184,7 +176,7 @@ export default function About() {
                 icon={stat.icon}
                 value={stat.value}
                 label={stat.label}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>
@@ -195,10 +187,10 @@ export default function About() {
       <section className="relative py-20 z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
               <span className="gradient-text">Our Core Values</span>
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               The principles that guide everything we do and drive our commitment to excellence
             </p>
           </div>
@@ -211,7 +203,7 @@ export default function About() {
                 title={value.title}
                 description={value.description}
                 features={value.features}
-                delay={index * 100}
+                animationIndex={index}
               />
             ))}
           </div>
@@ -221,13 +213,13 @@ export default function About() {
       {/* CTA Section */}
       <section className="relative py-20 bg-gradient-to-r from-purple-900/50 to-pink-900/50 z-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-6" data-aos="fade-up">
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
             <span className="gradient-text">Join Our Mission</span>
           </h2>
-          <p className="text-xl text-slate-300 mb-8" data-aos="fade-up" data-aos-delay="100">
+          <p className="text-xl text-slate-300 mb-8">
             Be part of the revolution that's transforming how students learn and libraries operate across India.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="200">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105">
               Partner With Us
             </button>
