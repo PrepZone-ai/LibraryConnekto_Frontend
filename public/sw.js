@@ -1,47 +1,66 @@
-const CACHE_NAME = 'lc-static-v4';
+const CACHE_NAME = 'lc-static-v5';
 const ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/vite.svg'
+  '/vite.svg',
 ];
+
+function isStaticAsset(pathname) {
+  return (
+    pathname.startsWith('/assets/') ||
+    pathname.startsWith('/icons/') ||
+    /\.(?:js|css|png|jpe?g|webp|gif|svg|ico|woff2?|apk)$/i.test(pathname)
+  );
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches
+      .open(CACHE_NAME)
       .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()),
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))),
+      )
+      .then(() => self.clients.claim()),
   );
 });
 
-// Always resolves to a Response. Guarantees event.respondWith() never gets
-// `undefined` or a thrown error, which is what produces the cryptic
-// "TypeError: Failed to convert value to 'Response'".
-async function safeFetch(request, fallbackKey) {
+async function cacheOkResponse(request, response) {
+  if (request.method === 'GET' && response?.ok && response.type === 'basic') {
+    const clone = response.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)).catch(() => {});
+  }
+}
+
+async function networkFirst(request) {
   try {
-    const res = await fetch(request);
-    if (request.method === 'GET' && res && res.ok && res.type === 'basic') {
-      const resClone = res.clone();
-      caches.open(CACHE_NAME).then((cache) => cache.put(request, resClone)).catch(() => {});
-    }
-    return res;
+    const response = await fetch(request);
+    await cacheOkResponse(request, response);
+    return response;
   } catch {
-    if (fallbackKey) {
-      const fallback = await caches.match(fallbackKey);
-      if (fallback) return fallback;
-    }
     const cached = await caches.match(request);
     if (cached) return cached;
-    const fallback = await caches.match('/index.html');
-    if (fallback) return fallback;
+    return new Response('', { status: 504, statusText: 'Network Error' });
+  }
+}
+
+async function navigateFetch(request) {
+  try {
+    const response = await fetch(request);
+    await cacheOkResponse(request, response);
+    return response;
+  } catch {
+    const cached = await caches.match('/index.html');
+    if (cached) return cached;
     return new Response('Offline', { status: 503, statusText: 'Offline' });
   }
 }
@@ -49,8 +68,6 @@ async function safeFetch(request, fallbackKey) {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Non-GET (POST/PUT/PATCH/DELETE) must pass through untouched so CORS,
-  // auth and form submissions behave normally.
   if (request.method !== 'GET') return;
 
   let url;
@@ -60,24 +77,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Don't intercept cross-origin requests (e.g. https://api.libraryconnekto.me).
   if (url.origin !== self.location.origin) return;
 
-  // SPA navigation (e.g. /admin/auth, /student, deep links): network-first,
-  // fall back to the cached index.html so React Router can take over offline.
+  // Hashed build assets: never serve index.html as a fallback for image/js/css requests.
+  if (isStaticAsset(url.pathname)) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
   if (request.mode === 'navigate') {
-    event.respondWith(safeFetch(request, '/index.html'));
+    event.respondWith(navigateFetch(request));
     return;
   }
 
-  // Same-origin /api/ GET — network-first with cache fallback.
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(safeFetch(request));
+    event.respondWith(networkFirst(request));
     return;
   }
 
-  // Same-origin static GET — stale-while-revalidate, always returns a Response.
   event.respondWith(
-    caches.match(request).then((cached) => cached || safeFetch(request))
+    caches.match(request).then((cached) => cached || networkFirst(request)),
   );
 });

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import DownloadAppSection from '../common/DownloadAppSection';
+import { ASSETS } from '../../lib/assets';
 
 export default function Footer() {
   return (
@@ -15,7 +16,7 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity">
               <div className="h-12 w-12 rounded-xl overflow-hidden shadow-lg shadow-purple-500/25">
                 <img 
-                  src={new URL('../../assets/Logo.png', import.meta.url).href} 
+                  src={ASSETS.logo} 
                   alt="Library Connekto Logo" 
                   className="h-full w-full object-cover"
                 />

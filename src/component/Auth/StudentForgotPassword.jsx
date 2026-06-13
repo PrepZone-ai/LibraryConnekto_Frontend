@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../../lib/api'
+import { ASSETS } from '../../lib/assets'
 
 const UserIcon = ({ className = 'w-6 h-6' }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,7 +48,7 @@ export default function StudentForgotPassword() {
       <main className="flex-grow relative flex items-center justify-center px-4 pt-20 pb-8 overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <img
-            src={new URL('../../assets/Front.png', import.meta.url).href}
+            src={ASSETS.front}
             alt=""
             className="h-full w-full object-cover"
           />
@@ -59,7 +60,7 @@ export default function StudentForgotPassword() {
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 overflow-hidden shadow-lg shadow-cyan-500/25">
                 <img
-                  src={new URL('../../assets/Logo.png', import.meta.url).href}
+                  src={ASSETS.logo}
                   alt="Library Connekto"
                   className="h-full w-full object-cover"
                 />

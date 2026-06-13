@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { ASSETS } from '../../lib/assets'
 
 // Icons
 const UserIcon = ({ className = "w-6 h-6" }) => (
@@ -97,7 +98,7 @@ export default function StudentLogin() {
         {/* Background Image */}
         <div className="absolute inset-0 -z-10">
           <img 
-            src={new URL('../../assets/Front.png', import.meta.url).href} 
+            src={ASSETS.front} 
             alt="Library Study Environment" 
             className="h-full w-full object-cover" 
           />
@@ -118,7 +119,7 @@ export default function StudentLogin() {
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 overflow-hidden shadow-lg shadow-cyan-500/25">
                   <img 
-                    src={new URL('../../assets/Logo.png', import.meta.url).href} 
+                    src={ASSETS.logo} 
                     alt="Library Connekto Logo" 
                     className="h-full w-full object-cover"
                   />

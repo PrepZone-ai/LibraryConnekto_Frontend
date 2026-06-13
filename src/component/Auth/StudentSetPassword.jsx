@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { apiClient } from '../../lib/api'
+import { ASSETS } from '../../lib/assets'
 
 // Icons
 const LockIcon = ({ className = "w-6 h-6" }) => (
@@ -109,7 +110,7 @@ export default function StudentSetPassword() {
         {/* Background Image */}
         <div className="absolute inset-0 -z-10">
           <img 
-            src={new URL('../../assets/Front.png', import.meta.url).href} 
+            src={ASSETS.front} 
             alt="Library Study Environment" 
             className="h-full w-full object-cover" 
           />
@@ -130,7 +131,7 @@ export default function StudentSetPassword() {
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 overflow-hidden shadow-lg shadow-emerald-500/25">
                   <img 
-                    src={new URL('../../assets/Logo.png', import.meta.url).href} 
+                    src={ASSETS.logo} 
                     alt="Library Connekto Logo" 
                     className="h-full w-full object-cover"
                   />

@@ -7,7 +7,9 @@ import {
   resolveLibraryImages,
 } from '../../lib/libraries';
 
-const PLACEHOLDER_IMAGE = new URL('../../assets/Lib.jpeg', import.meta.url).href;
+import { ASSETS } from '../../lib/assets';
+
+const PLACEHOLDER_IMAGE = ASSETS.lib;
 
 function StatTile({ label, value, accent = 'text-white' }) {
   return (

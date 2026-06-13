@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ASSETS } from '../../lib/assets';
 
 const DownloadAppButton = ({ 
   variant = 'primary', 
@@ -20,7 +21,7 @@ const DownloadAppButton = ({
     try {
       // Create a temporary link element to trigger download
       const link = document.createElement('a');
-      link.href = new URL('../../assets/LibraryConnekto.apk', import.meta.url).href;
+      link.href = ASSETS.apk;
       link.download = 'LibraryConnekto.apk';
       link.style.display = 'none';
       

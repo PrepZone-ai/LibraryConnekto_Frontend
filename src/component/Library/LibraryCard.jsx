@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { resolveMediaUrl } from '../../lib/api';
+import { ASSETS } from '../../lib/assets';
 
 import { withScrollReveal } from '../../utils/scrollAnimations';
 
@@ -12,7 +13,7 @@ const LibraryCard = ({ library, animationIndex }) => {
   // Get the first image or use a placeholder
   const primaryImage = library.facility_images && library.facility_images.length > 0
     ? resolveMediaUrl(library.facility_images[0])
-    : new URL('../../assets/Lib.jpeg', import.meta.url).href;
+    : ASSETS.lib;
   
   // Truncate description to 80 characters
   const truncatedDescription = library.facility_description

@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
 import { buildReferralShareMessage, formatReferrerLabel, getReferralSignupUrl } from '../../lib/referralShare';
-import FrontImage from '../../assets/Front.png';
-import TransformImage from '../../assets/Transform.png';
+import { ASSETS } from '../../lib/assets';
 
 const AdminReferral = () => {
   const navigate = useNavigate();
@@ -121,12 +120,12 @@ const AdminReferral = () => {
                 <h1 className="text-center text-3xl md:text-4xl font-extrabold text-white mb-3">Grow with Referrals</h1>
                 <p className="text-center text-white/70 text-sm md:text-base mb-6">Share your code, invite friends, and track your rewards — all in one place.</p>
                 <div className="flex items-center justify-center gap-5 md:gap-8">
-                  <img src={FrontImage} alt="Before using software" className="h-24 md:h-32 object-contain drop-shadow-xl" />
+                  <img src={ASSETS.front} alt="Before using software" className="h-24 md:h-32 object-contain drop-shadow-xl" />
                   <div className="flex flex-col items-center gap-2">
                     <svg width="40" height="40" viewBox="0 0 24 24" className="text-white/80"><path fill="currentColor" d="M13 5l7 7l-7 7v-4H4v-6h9V5z"/></svg>
                     <span className="text-white/70 text-xs md:text-sm">to connect with use of our software</span>
                   </div>
-                  <img src={TransformImage} alt="After using software" className="h-24 md:h-32 object-contain drop-shadow-xl" />
+                  <img src={ASSETS.transform} alt="After using software" className="h-24 md:h-32 object-contain drop-shadow-xl" />
                 </div>
               </div>
             </div>

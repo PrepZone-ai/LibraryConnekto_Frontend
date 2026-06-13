@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
+import { ASSETS } from '../../lib/assets';
 import SelectRoleModal from '../Auth/SelectRoleModal';
 import { useStudentProfile, queryKeys } from '../../lib/queries';
 
@@ -114,7 +115,7 @@ export default function Header() {
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
             <div className="h-10 w-10 rounded-xl overflow-hidden shadow-lg shadow-purple-500/25 group-hover:shadow-purple-500/40 transition-all duration-300">
               <img 
-                src={new URL('../../assets/Logo.png', import.meta.url).href} 
+                src={ASSETS.logo} 
                 alt="Library Connekto Logo" 
                 className="h-full w-full object-cover"
               />

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient, resolveMediaUrl } from '../../lib/api';
 import { queryKeys, useAdminDetails } from '../../lib/queries';
+import { ASSETS } from '../../lib/assets';
 
 const AdminDetailsForm = () => {
   const navigate = useNavigate();
@@ -321,7 +322,7 @@ const AdminDetailsForm = () => {
           <div className="mb-8 text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 overflow-hidden shadow-lg shadow-purple-500/25">
               <img 
-                src={new URL('../../assets/Logo.png', import.meta.url).href} 
+                src={ASSETS.logo} 
                 alt="Library Connekto Logo" 
                 className="h-full w-full object-cover"
               />

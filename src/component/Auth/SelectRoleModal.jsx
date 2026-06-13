@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { ASSETS } from '../../lib/assets'
 
 export default function SelectRoleModal({ open, onClose, onSelect }) {
   const navigate = useNavigate()
@@ -39,7 +40,7 @@ export default function SelectRoleModal({ open, onClose, onSelect }) {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg shadow-purple-500/25">
                 <img 
-                  src={new URL('../../assets/Logo.png', import.meta.url).href} 
+                  src={ASSETS.logo} 
                   alt="Library Connekto Logo" 
                   className="h-full w-full object-cover"
                 />

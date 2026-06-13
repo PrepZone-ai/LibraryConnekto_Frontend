@@ -9,6 +9,7 @@ import { apiClient } from '../../lib/api';
 import { fetchPublicLibraries } from '../../lib/libraries';
 import { withScrollReveal } from '../../utils/scrollAnimations';
 import useScrollReveal from '../../hooks/useScrollReveal';
+import { HERO_IMAGES, ASSETS } from '../../lib/assets';
 import {
   AnalyticsIcon,
   BellIcon,
@@ -45,13 +46,7 @@ export default function Home() {
   const [loadingLibraries, setLoadingLibraries] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const navigate = useNavigate();
-  const heroImages = [
-    new URL('../../assets/Front.png', import.meta.url).href,
-    new URL('../../assets/Lib.jpeg', import.meta.url).href,
-    new URL('../../assets/Lib1.jpeg', import.meta.url).href,
-    new URL('../../assets/Lib2.jpeg', import.meta.url).href,
-  ];
-  
+
   useEffect(() => {
     if (!navigator.geolocation) {
       fetchLibraries(null);
@@ -149,7 +144,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <div className="hero-carousel" aria-hidden="true">
             <div className="hero-carousel-track">
-              {heroImages.concat(heroImages).map((src, index) => (
+              {HERO_IMAGES.concat(HERO_IMAGES).map((src, index) => (
                 <div key={`${src}-${index}`} className="hero-carousel-slide">
                   <img src={src} alt="" />
                 </div>
@@ -263,7 +258,7 @@ export default function Home() {
                       </circle>
                       <rect x="-15" y="-10" width="30" height="20" rx="3" fill="#0f172a" opacity="0.9"/>
                       <rect x="-12" y="-7" width="24" height="14" rx="2" fill="url(#indiaGrad1)" opacity="0.6"/>
-                      <image x="-6" y="-6" width="12" height="12" href={new URL('../../assets/Logo.png', import.meta.url).href} />
+                      <image x="-6" y="-6" width="12" height="12" href={ASSETS.logo} />
                     </g>
                     
                     {/* Library locations across India - Repositioned for better accuracy */}
