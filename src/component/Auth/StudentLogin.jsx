@@ -74,7 +74,6 @@ export default function StudentLogin() {
     try {
       const result = await login(id, password, 'student')
       if (result.success) {
-        // Check if this is first login
         if (result.isFirstLogin) {
           navigate('/student/set-password', { 
             state: { studentId: result.studentId } 
@@ -83,6 +82,10 @@ export default function StudentLogin() {
           navigate('/student/dashboard')
         }
       } else {
+        if (result.redirectTo) {
+          navigate(result.redirectTo, { replace: true })
+          return
+        }
         setError(result.error)
       }
     } catch (err) {

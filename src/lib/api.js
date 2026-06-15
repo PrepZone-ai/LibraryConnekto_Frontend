@@ -66,19 +66,21 @@ export const removeAuthToken = () => {
 };
 
 export const redirectToLogin = () => {
-  // Avoid redirect loops if already on a public auth page
   const currentPath = window.location.pathname;
   const authPaths = [
     '/admin/auth',
     '/admin/reset-password',
+    '/admin/platform-subscription',
     '/student/login',
     '/student/forgot-password',
     '/student/set-password',
+    '/student/subscription-unavailable',
     '/auth/verify-success',
     '/auth/verify-error',
   ];
   if (!authPaths.some((p) => currentPath.startsWith(p))) {
-    window.location.href = '/admin/auth';
+    const role = localStorage.getItem('selectedRole');
+    window.location.href = role === 'student' ? '/student/login' : '/admin/auth';
   }
 };
 
@@ -185,11 +187,11 @@ class ApiClient {
 
     if (!res.ok) {
       let message = res.statusText || `HTTP ${res.status}`;
+      let detailObj = null;
       try {
         const data = await res.json();
         if (data) {
           if (Array.isArray(data.detail)) {
-            // e.g., FastAPI validation errors: include field path
             message = data.detail
               .map((d) => {
                 const path = Array.isArray(d.loc) ? d.loc.join('.') : d.loc;
@@ -197,16 +199,37 @@ class ApiClient {
                 return path ? `${path}: ${msg}` : msg;
               })
               .join('; ');
-          } else if (typeof data.detail === 'object') {
-            message = JSON.stringify(data.detail);
+          } else if (typeof data.detail === 'object' && data.detail !== null) {
+            detailObj = data.detail;
+            message = detailObj.message || JSON.stringify(detailObj);
           } else {
             message = data.detail || data.message || message;
           }
         }
       } catch (_) {}
 
-      // 401 = token rejected by server (expired/invalid), 403 "Not authenticated" = no token sent
-      // Both mean the session is gone — clear and redirect to login.
+      if (res.status === 403 && detailObj?.code === 'platform_subscription_expired') {
+        const dest = detailObj.redirect_to || '/admin/platform-subscription';
+        if (!window.location.pathname.startsWith(dest)) {
+          window.location.href = dest;
+        }
+        const subErr = new Error(detailObj.message || 'Subscription expired');
+        subErr.status = 403;
+        subErr.detail = detailObj;
+        throw subErr;
+      }
+
+      if (res.status === 403 && detailObj?.code === 'library_platform_subscription_expired') {
+        const dest = detailObj.redirect_to || '/student/subscription-unavailable';
+        if (!window.location.pathname.startsWith(dest)) {
+          window.location.href = dest;
+        }
+        const subErr = new Error(detailObj.message || 'Library software subscription expired');
+        subErr.status = 403;
+        subErr.detail = detailObj;
+        throw subErr;
+      }
+
       if (includeAuth && (res.status === 401 || (res.status === 403 && message === 'Not authenticated'))) {
         removeAuthToken();
         redirectToLogin();
@@ -219,6 +242,7 @@ class ApiClient {
           : message,
       );
       apiErr.status = res.status;
+      apiErr.detail = detailObj;
       throw apiErr;
     }
     // Some endpoints might return 204

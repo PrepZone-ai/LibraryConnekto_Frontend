@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import SelectRoleModal from '../Auth/SelectRoleModal';
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import DownloadAppButton from '../common/DownloadAppButton';
+import PlatformPricingSection from '../common/PlatformPricingSection';
 import LibraryCard from '../Library/LibraryCard';
 import { apiClient } from '../../lib/api';
 import { fetchPublicLibraries } from '../../lib/libraries';
@@ -897,6 +898,21 @@ export default function Home() {
             <Stat value="4.9/5" label="Average Rating" index={1} />
             <Stat value="99.9%" label="Uptime Guarantee" index={2} />
           </div>
+        </div>
+      </section>
+
+      {/* Software Subscription Pricing */}
+      <section id="pricing" className="relative py-24 bg-slate-900/50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4">
+              <span className="gradient-text">Software Subscription Plans</span>
+            </h2>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+              Library owners get 1 month free. Choose a plan after your trial to keep your library and students online.
+            </p>
+          </div>
+          <PlatformPricingSection ctaMode="signup" />
         </div>
       </section>
 

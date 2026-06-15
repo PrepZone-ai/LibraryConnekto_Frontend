@@ -117,6 +117,10 @@ export default function AdminAuth() {
       if (mode === 'signin') {
         const result = await login(email, password, 'admin')
         if (result.success) {
+          if (result.redirectTo) {
+            navigate(result.redirectTo, { replace: true })
+            return
+          }
           let isComplete = result.adminDetails?.is_complete
           if (isComplete === undefined) {
             try {

@@ -18,6 +18,8 @@ const ALLOWED_BEFORE_SETUP = [
 
   SETUP_PATH,
 
+  '/admin/platform-subscription',
+
   '/admin/auth',
 
   '/admin/reset-password',

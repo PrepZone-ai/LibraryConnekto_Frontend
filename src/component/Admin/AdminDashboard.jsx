@@ -30,6 +30,7 @@ const AdminDashboard = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [topPanelPercent, setTopPanelPercent] = useState(25); // pending bookings height percent in right column (1/4 = 25%)
   const [panelOrderTop, setPanelOrderTop] = useState('bookings'); // 'bookings' | 'messages'
+  const [platformSub, setPlatformSub] = useState(null);
   const sidebarRef = useRef(null);
 
   // Use React Query hooks for data fetching
@@ -57,6 +58,14 @@ const AdminDashboard = () => {
       }));
     }
   }, [userType, navigate, adminDetails, adminDetailsLoading, setUser]);
+
+  useEffect(() => {
+    if (userType !== 'admin') return;
+    apiClient
+      .get('/platform-subscription/status')
+      .then(setPlatformSub)
+      .catch(() => setPlatformSub(null));
+  }, [userType]);
 
   // Process stats data
   const stats = useMemo(() => {
@@ -293,6 +302,35 @@ const AdminDashboard = () => {
           {/* Profile Incomplete Alert - Shows only when bank details are missing */}
           {!adminDetailsLoading && adminDetails && (
             <ProfileIncompleteAlert profileData={adminDetails} />
+          )}
+
+          {platformSub && (
+            <div
+              className={`mb-6 rounded-xl border px-5 py-4 flex flex-wrap items-center justify-between gap-4 ${
+                platformSub.status === 'expired'
+                  ? 'border-red-500/40 bg-red-900/20'
+                  : platformSub.status === 'trial'
+                    ? 'border-amber-500/40 bg-amber-900/20'
+                    : 'border-emerald-500/40 bg-emerald-900/20'
+              }`}
+            >
+              <div>
+                <p className="text-sm text-slate-400">Software subscription</p>
+                <p className="text-lg font-semibold text-white capitalize">
+                  {platformSub.status === 'trial' ? 'Free trial' : platformSub.status}
+                  {platformSub.days_left != null && (
+                    <span className="text-slate-300 font-normal"> · {platformSub.days_left} days left</span>
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/platform-subscription')}
+                className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 text-sm font-bold text-white hover:opacity-90"
+              >
+                {platformSub.status === 'expired' ? 'Renew Now' : 'Manage Subscription'}
+              </button>
+            </div>
           )}
 
           {/* Welcome Section for Empty State */}

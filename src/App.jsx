@@ -12,6 +12,7 @@ import AnonymousBookingPage from './component/Booking/AnonymousBookingPage'
 import Contact from './component/Contact/Contact'
 import Home from './component/Home/Home'
 import AdminDetailsGate from './component/Admin/AdminDetailsGate'
+import AdminPlatformSubscriptionGate from './component/Admin/AdminPlatformSubscriptionGate'
 import AppLayout from './component/Layout/AppLayout'
 import LibraryDetails from './component/Library/LibraryDetails'
 import LibraryList from './component/Library/LibraryList'
@@ -25,6 +26,7 @@ import AdminDashboard from './component/Admin/AdminDashboard'
 import AdminDetailsForm from './component/Admin/AdminDetailsForm'
 import AdminMessages from './component/Admin/AdminMessages'
 import AdminProfile from './component/Admin/AdminProfile'
+import AdminPlatformSubscription from './component/Admin/AdminPlatformSubscription'
 import AdminQRScanner from './component/Admin/AdminQRScanner'
 import AdminReferral from './component/Admin/AdminReferral'
 import AttendanceDetails from './component/Admin/AttendanceDetails'
@@ -43,6 +45,7 @@ import StudentExams from './component/Student/StudentExams'
 import StudentMessages from './component/Student/StudentMessages'
 import StudentProfile from './component/Student/StudentProfile'
 import StudentSubscription from './component/Student/StudentSubscription'
+import StudentSubscriptionUnavailable from './component/Student/StudentSubscriptionUnavailable'
 import StudentTasks from './component/Student/StudentTasks'
 
 // Payment Components
@@ -57,7 +60,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Block admin app routes until /admin/details is complete */}
+          <Route element={<AdminPlatformSubscriptionGate />}>
           <Route element={<AdminDetailsGate />}>
           <Route element={<AppLayout />}>
             {/* Public Routes */}
@@ -103,8 +106,10 @@ function App() {
             <Route path="/admin/student-removal-requests" element={<StudentRemovalRequests />} />
             <Route path="/admin/referral" element={<AdminReferral />} />
             <Route path="/admin/scanner" element={<AdminQRScanner />} />
+            <Route path="/admin/platform-subscription" element={<AdminPlatformSubscription />} />
 
             {/* Student Protected Routes */}
+            <Route path="/student/subscription-unavailable" element={<StudentSubscriptionUnavailable />} />
             <Route path="/student/dashboard" element={<StudentDashboard />} />
             <Route path="/student/subscription" element={<StudentSubscription />} />
             <Route path="/student/book-seat" element={<BookSeat />} />
@@ -114,6 +119,7 @@ function App() {
             <Route path="/student/attendance" element={<StudentAttendance />} />
             <Route path="/student/attendance-history" element={<AttendanceHistory />} />
             <Route path="/student/profile" element={<StudentProfile />} />
+          </Route>
           </Route>
           </Route>
         </Routes>

@@ -108,8 +108,15 @@ export const AuthProvider = ({ children }) => {
         });
       }
       
-      // For admin users, check if admin details are complete
+      // For admin users, check platform subscription and admin details
       if (userType === 'admin') {
+        if (response.redirect_to || response.platform_subscription_status === 'expired') {
+          return {
+            success: true,
+            redirectTo: response.redirect_to || '/admin/platform-subscription',
+            platformSubscriptionStatus: response.platform_subscription_status,
+          };
+        }
         try {
           const adminDetails = await apiClient.get('/admin/details');
           return { 
@@ -119,7 +126,6 @@ export const AuthProvider = ({ children }) => {
           };
         } catch (error) {
           console.error("Failed to fetch admin details:", error);
-          // Let AdminDetailsGate decide after React Query loads; avoid sending complete admins to setup on transient errors
           return { success: true, needsAdminDetails: false };
         }
       }
@@ -135,6 +141,13 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      if (error?.detail?.code === 'library_platform_subscription_expired') {
+        return {
+          success: false,
+          error: error.detail.message,
+          redirectTo: error.detail.redirect_to || '/student/subscription-unavailable',
+        };
+      }
       return { success: false, error: error.message };
     }
   };

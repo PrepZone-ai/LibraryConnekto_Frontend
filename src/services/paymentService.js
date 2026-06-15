@@ -51,6 +51,14 @@ const FLOW_ENDPOINTS = {
       apiClient.post('/payment/complete-by-order', payload, true, true),
     verify: (payload) => apiClient.post('/payment/verify', payload, true, true),
   },
+  platform_subscription: {
+    recoveryKey: 'lc_pending_platform_subscription',
+    pollStatus: (orderId) =>
+      apiClient.get(`/platform-subscription/order-status/${encodeURIComponent(orderId)}`, true, true),
+    completeByOrder: (payload) =>
+      apiClient.post('/platform-subscription/complete-by-order', payload, true, true),
+    verify: (payload) => apiClient.post('/platform-subscription/verify', payload, true, true),
+  },
   transfer: {
     recoveryKey: 'lc_pending_transfer',
     pollStatus: (orderId) =>
@@ -361,6 +369,27 @@ class PaymentService {
           contact: paymentData.student_phone,
         },
         description: `Subscription: ${paymentData.plan_name || 'Plan'}`,
+      });
+      onSuccess(result);
+    } catch (error) {
+      onError(error);
+    }
+  }
+
+  static async processPlatformSubscriptionPayment({ months }, onSuccess, onError) {
+    try {
+      const orderData = await apiClient.post('/platform-subscription/create-order', { months });
+      const order = {
+        id: orderData.order_id,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+      };
+      const result = await PaymentService.openRazorpayCheckout({
+        flowType: 'platform_subscription',
+        order,
+        finalizePayload: { months, razorpay_order_id: order.id },
+        prefill: {},
+        description: `LibraryConnekto: ${orderData.plan_label || 'Software subscription'}`,
       });
       onSuccess(result);
     } catch (error) {

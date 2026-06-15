@@ -1,5 +1,6 @@
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import DownloadAppButton from '../common/DownloadAppButton';
+import PlatformPricingSection from '../common/PlatformPricingSection';
 import useScrollReveal from '../../hooks/useScrollReveal';
 import { withScrollReveal } from '../../utils/scrollAnimations';
 import { 
@@ -395,6 +396,21 @@ export default function Services() {
               />
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Software Subscription Pricing */}
+      <section className="relative py-20 bg-slate-900/50 z-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
+              <span className="gradient-text">Simple, Transparent Pricing for Library Owners</span>
+            </h2>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+              Start with a 1-month free trial. No hidden fees — pay only for the software you use.
+            </p>
+          </div>
+          <PlatformPricingSection ctaMode="signup" />
         </div>
       </section>
 

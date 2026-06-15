@@ -365,6 +365,16 @@ export default function Header() {
                     >
                       Scanner
                     </button>
+                    <button
+                      onClick={() => navigate('/admin/platform-subscription')}
+                      className={`transition-all duration-200 px-3 py-2 rounded-lg ${
+                        location.pathname === '/admin/platform-subscription'
+                          ? 'text-purple-400 bg-purple-500/10'
+                          : 'text-slate-300 hover:text-purple-400 hover:bg-purple-500/5'
+                      }`}
+                    >
+                      Subscription
+                    </button>
                   </>
                 ) : (
                   <>
@@ -677,6 +687,12 @@ export default function Header() {
                         className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
                       >
                         Scanner
+                      </button>
+                      <button
+                        onClick={() => { closeMobileMenu(); navigate('/admin/platform-subscription'); }}
+                        className="block w-full text-left px-4 py-3 rounded-lg text-slate-300 hover:text-purple-400 hover:bg-purple-500/5 transition-all duration-200"
+                      >
+                        Subscription
                       </button>
                       <button 
                         onClick={() => { closeMobileMenu(); navigate('/admin/profile'); }} 
