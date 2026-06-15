@@ -42,17 +42,20 @@ import StudentDashboard from './component/Student/StudentDashboard'
 import StudentExams from './component/Student/StudentExams'
 import StudentMessages from './component/Student/StudentMessages'
 import StudentProfile from './component/Student/StudentProfile'
+import StudentSubscription from './component/Student/StudentSubscription'
 import StudentTasks from './component/Student/StudentTasks'
 
 // Payment Components
 import PaymentConfirmation from './component/Payment/PaymentConfirmation'
 import PaymentSuccess from './component/Payment/PaymentSuccess'
 import TransferPayment from './component/Payment/TransferPayment'
+import ScrollToTop from './component/common/ScrollToTop'
 
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop />
         <Routes>
           {/* Block admin app routes until /admin/details is complete */}
           <Route element={<AdminDetailsGate />}>
@@ -103,6 +106,7 @@ function App() {
 
             {/* Student Protected Routes */}
             <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/subscription" element={<StudentSubscription />} />
             <Route path="/student/book-seat" element={<BookSeat />} />
             <Route path="/student/messages" element={<StudentMessages />} />
             <Route path="/student/tasks" element={<StudentTasks />} />

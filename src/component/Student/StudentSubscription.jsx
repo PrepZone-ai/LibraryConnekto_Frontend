@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../lib/api';
+import PaymentService from '../../services/paymentService';
 import { useStudentProfile, queryKeys } from '../../lib/queries';
 import { useQueryClient } from '@tanstack/react-query';
 const StudentSubscription = () => {
@@ -42,27 +43,33 @@ const StudentSubscription = () => {
   };
 
   const handlePayment = async () => {
+    if (!selectedPlan || !currentSubscription) return;
     try {
-      // Here you would integrate with your payment gateway (Razorpay, Stripe, etc.)
-      // For now, we'll simulate a successful payment
-      const paymentData = {
-        plan_id: selectedPlan.id,
-        amount: selectedPlan.price,
-        student_id: currentSubscription.id
-      };
-
-      const response = await apiClient.post('/subscription/purchase', paymentData);
-      
-      if (response.success) {
-        alert('Subscription renewed successfully!');
-        setShowPaymentModal(false);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.studentProfile });
-        fetchSubscriptionData(); // Refresh data
-        navigate('/student/dashboard');
-      }
+      const amountPaise = PaymentService.planAmountPaise(selectedPlan);
+      await PaymentService.processPayment(
+        {
+          plan_id: selectedPlan.id,
+          amount: amountPaise,
+          plan_name: PaymentService.planDisplayName(selectedPlan),
+          student_id: currentSubscription.id,
+          student_name: currentSubscription.name,
+          student_email: currentSubscription.email,
+          student_phone: currentSubscription.mobile_no,
+        },
+        async () => {
+          alert('Subscription renewed successfully!');
+          setShowPaymentModal(false);
+          await queryClient.invalidateQueries({ queryKey: queryKeys.studentProfile });
+          fetchSubscriptionData();
+          navigate('/student/dashboard');
+        },
+        (error) => {
+          alert(error.message || 'Payment failed. Please try again.');
+        },
+      );
     } catch (error) {
       console.error('Payment failed:', error);
-      alert('Payment failed. Please try again.');
+      alert(error.message || 'Payment failed. Please try again.');
     }
   };
 
@@ -145,8 +152,10 @@ const StudentSubscription = () => {
                 className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6 hover:border-indigo-500/50 transition-all duration-300 transform hover:-translate-y-1"
               >
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2">{plan.plan_name}</h3>
-                  <div className="text-3xl font-bold text-indigo-400 mb-2">₹{plan.price}</div>
+                  <h3 className="text-xl font-bold text-white mb-2">{PaymentService.planDisplayName(plan)}</h3>
+                  <div className="text-3xl font-bold text-indigo-400 mb-2">
+                    ₹{plan.discounted_amount || plan.amount}
+                  </div>
                   <div className="text-slate-400 text-sm">per month</div>
                 </div>
                 
@@ -180,7 +189,7 @@ const StudentSubscription = () => {
               <h3 className="text-2xl font-bold text-white mb-6">Confirm Subscription</h3>
               
               <div className="bg-slate-700/50 rounded-xl p-4 mb-6">
-                <h4 className="text-white font-semibold mb-2">{selectedPlan.plan_name}</h4>
+                <h4 className="text-white font-semibold mb-2">{PaymentService.planDisplayName(selectedPlan)}</h4>
                 <div className="text-2xl font-bold text-indigo-400">₹{selectedPlan.price}/month</div>
               </div>
               

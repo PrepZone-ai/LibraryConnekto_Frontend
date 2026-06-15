@@ -106,50 +106,25 @@ const BookSeat = () => {
         seat_id: selectedSeat.id
       });
 
-      // 2) Open Razorpay to pay Rs.1
-      const Razorpay = await PaymentService.initializePaymentGateway();
-      await new Promise((resolve, reject) => {
-        const rzp = new Razorpay({
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-          amount: order.amount,
-          currency: order.currency,
-          name: 'Library Connekto',
-          description: 'Seat booking token payment',
-          order_id: order.id,
-          method: {
-            upi: true,
-            card: true,
-            netbanking: true,
-            wallet: true
-          },
-          upi: { flow: 'intent' },
-          handler: async (response) => {
-            try {
-              // 3) Verify and create pending booking
-              await PaymentService.verifyBookingTokenPayment({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                library_id: selectedLibrary.id,
-                subscription_plan_id: selectedPlan.id,
-                seat_id: selectedSeat.id,
-                date: bookingDetails.date,
-                start_time: bookingDetails.start_time,
-                end_time: bookingDetails.end_time,
-                purpose: bookingDetails.purpose,
-                amount: parseFloat(selectedPlan.discounted_amount || selectedPlan.amount)
-              });
-              alert('Token paid. Booking submitted for admin approval.');
-              navigate('/student/dashboard');
-              resolve();
-            } catch (e2) {
-              reject(e2);
-            }
-          },
-          modal: { ondismiss: () => reject(new Error('Payment cancelled')) }
-        });
-        rzp.open();
+      const bookingPayload = {
+        library_id: selectedLibrary.id,
+        subscription_plan_id: selectedPlan.id,
+        seat_id: selectedSeat.id,
+        date: bookingDetails.date,
+        start_time: bookingDetails.start_time,
+        end_time: bookingDetails.end_time,
+        purpose: bookingDetails.purpose,
+        amount: parseFloat(selectedPlan.discounted_amount || selectedPlan.amount),
+      };
+
+      await PaymentService.payStudentBookingToken({
+        order,
+        bookingPayload,
+        prefill: {},
       });
+
+      alert('Token paid. Booking submitted for admin approval.');
+      navigate('/student/dashboard');
     } catch (error) {
       console.error('Error booking seat:', error);
       alert(error.message || 'Failed to book seat. Please try again.');

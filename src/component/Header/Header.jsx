@@ -25,6 +25,10 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+    setIsScrolled(window.scrollY > 50);
+  }, [location.pathname]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (isMobileMenuOpen && !event.target.closest('header')) {
         setIsMobileMenuOpen(false);

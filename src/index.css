@@ -18,12 +18,20 @@
 }
 
 /* Global resets for full-bleed Tailwind layout */
-html, body, #root {
-  height: 100%;
-  overflow-x: hidden; /* Prevent horizontal scroll */
+html {
+  overflow-x: clip;
+  scroll-behavior: auto;
 }
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   @apply antialiased min-h-screen;
+  overflow-x: clip;
   color: var(--app-text-primary);
   background: linear-gradient(to bottom right, var(--app-bg-from), var(--app-bg-via), var(--app-bg-to));
   background-attachment: fixed;

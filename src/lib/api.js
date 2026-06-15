@@ -97,6 +97,9 @@ export const isTokenValid = () => {
   }
 };
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 90000;
+const RETRYABLE_STATUS = new Set([502, 503, 504]);
+
 class ApiClient {
   constructor(baseURL) {
     this.baseURL = baseURL;
@@ -119,13 +122,67 @@ class ApiClient {
     return headers;
   }
 
-  async request(endpoint, options = {}, includeAuth = true) {
+  async request(endpoint, options = {}, includeAuth = true, retryOptions = null) {
+    const maxAttempts = retryOptions?.maxAttempts ?? 1;
+    const retryDelays = retryOptions?.retryDelays ?? [2000, 4000, 8000];
+    let lastError;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this._requestOnce(endpoint, options, includeAuth);
+      } catch (err) {
+        lastError = err;
+        const status = err?.status;
+        const canRetry =
+          attempt < maxAttempts &&
+          (RETRYABLE_STATUS.has(status) ||
+            /gateway timeout|network error|failed to fetch/i.test(err?.message || ''));
+        if (!canRetry) break;
+        await new Promise((r) => setTimeout(r, retryDelays[attempt - 1] ?? 4000));
+      }
+    }
+    throw lastError;
+  }
+
+  async requestWithRetry(endpoint, options = {}, includeAuth = true) {
+    return this.request(endpoint, options, includeAuth, {
+      maxAttempts: 4,
+      retryDelays: [2000, 4000, 8000],
+    });
+  }
+
+  async _requestOnce(endpoint, options = {}, includeAuth = true) {
     const url = `${this.baseURL}${endpoint}`;
     const headers = await this.getHeaders(options.headers, includeAuth);
+    const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    const config = { ...options, headers };
+    const config = {
+      ...options,
+      headers,
+      signal: controller.signal,
+    };
+    delete config.timeoutMs;
 
-    const res = await fetch(url, config);
+    let res;
+    try {
+      res = await fetch(url, config);
+    } catch (err) {
+      if (err?.name === 'AbortError') {
+        const timeoutErr = new Error(
+          'Payment received — confirming your booking. Please wait or tap Confirm.',
+        );
+        timeoutErr.status = 504;
+        throw timeoutErr;
+      }
+      const networkErr = new Error(err?.message || 'Network error');
+      networkErr.status = 0;
+      throw networkErr;
+    } finally {
+      clearTimeout(timer);
+    }
+
     if (!res.ok) {
       let message = res.statusText || `HTTP ${res.status}`;
       try {
@@ -156,7 +213,13 @@ class ApiClient {
         throw new Error('Session expired. Please log in again.');
       }
       
-      throw new Error(message);
+      const apiErr = new Error(
+        res.status === 504
+          ? 'Payment received — confirming your booking. Please wait or tap Confirm.'
+          : message,
+      );
+      apiErr.status = res.status;
+      throw apiErr;
     }
     // Some endpoints might return 204
     const contentType = res.headers.get('content-type') || '';
@@ -164,16 +227,18 @@ class ApiClient {
     return res.json();
   }
 
-  get(endpoint, includeAuth = true) {
-    return this.request(endpoint, { method: 'GET' }, includeAuth);
+  get(endpoint, includeAuth = true, useRetry = false) {
+    const fn = useRetry ? this.requestWithRetry.bind(this) : this.request.bind(this);
+    return fn(endpoint, { method: 'GET' }, includeAuth);
   }
-  post(endpoint, body, includeAuth = true) {
+  post(endpoint, body, includeAuth = true, useRetry = false) {
     const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
     const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
-    return this.request(
+    const fn = useRetry ? this.requestWithRetry.bind(this) : this.request.bind(this);
+    return fn(
       endpoint,
       { method: 'POST', body: isFormData ? body : JSON.stringify(body), headers },
-      includeAuth
+      includeAuth,
     );
   }
   put(endpoint, body, includeAuth = true) {
@@ -193,11 +258,11 @@ class ApiClient {
   }
 
   // Anonymous methods for public endpoints
-  getAnonymous(endpoint) {
-    return this.get(endpoint, false);
+  getAnonymous(endpoint, useRetry = false) {
+    return this.get(endpoint, false, useRetry);
   }
-  postAnonymous(endpoint, body) {
-    return this.post(endpoint, body, false);
+  postAnonymous(endpoint, body, useRetry = false) {
+    return this.post(endpoint, body, false, useRetry);
   }
 }
 

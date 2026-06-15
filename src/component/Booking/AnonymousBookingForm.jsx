@@ -31,6 +31,7 @@ const AnonymousBookingForm = ({
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [userLocation, setUserLocation] = useState(null);
@@ -46,6 +47,42 @@ const AnonymousBookingForm = ({
     amount: 0,
     purpose: ''
   });
+
+  useEffect(() => {
+    const resume = async () => {
+      try {
+        const result = await PaymentService.resumePendingPayment('anonymous_token');
+        if (result) {
+          setSuccess(true);
+          setFormData({
+            name: '',
+            email: '',
+            mobile: '',
+            address: '',
+            subscription_months: 1,
+            amount: 0,
+            purpose: '',
+          });
+        }
+      } catch (_) {
+        /* user can tap confirm manually */
+      }
+    };
+    void resume();
+  }, []);
+
+  const handleConfirmPendingPayment = async () => {
+    setConfirmingPayment(true);
+    setError('');
+    try {
+      await PaymentService.resumePendingPayment('anonymous_token');
+      setSuccess(true);
+    } catch (err) {
+      setError(err?.message || 'Could not confirm payment yet. Please try again in a few seconds.');
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
 
   const lockedLibrary = useMemo(
     () => (libraryLocked ? findLibraryById(libraries, lockedLibraryId) : null),
@@ -186,6 +223,7 @@ const AnonymousBookingForm = ({
 
     try {
       setSubmitting(true);
+      setConfirmingPayment(true);
       setError('');
       // 1) Initiate Rs.1 token order
       const order = await PaymentService.initAnonymousBookingTokenPayment({
@@ -219,6 +257,7 @@ const AnonymousBookingForm = ({
           email: formData.email,
           mobile: formData.mobile,
         },
+        onProgress: () => setConfirmingPayment(true),
       });
 
       setSuccess(true);
@@ -245,6 +284,7 @@ const AnonymousBookingForm = ({
       setError(error?.message || 'Failed to create booking. Please try again.');
     } finally {
       setSubmitting(false);
+      setConfirmingPayment(false);
     }
   };
 
@@ -295,6 +335,22 @@ const AnonymousBookingForm = ({
       {error && (
         <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
           <p className="text-red-300">{error}</p>
+          {PaymentService.loadPendingPayment('anonymous_token') && (
+            <button
+              type="button"
+              onClick={handleConfirmPendingPayment}
+              disabled={confirmingPayment}
+              className="mt-3 w-full py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold disabled:opacity-50"
+            >
+              {confirmingPayment ? 'Confirming payment…' : 'I already paid — confirm booking'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {confirmingPayment && !error && (
+        <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-xl">
+          <p className="text-blue-200">Confirming your payment… Please wait.</p>
         </div>
       )}
 
@@ -605,7 +661,7 @@ const AnonymousBookingForm = ({
           disabled={submitting}
           className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
         >
-          {submitting ? 'Submitting...' : 'Submit Booking Request'}
+          {submitting ? (confirmingPayment ? 'Confirming payment…' : 'Submitting...') : 'Submit Booking Request'}
         </button>
       </form>
 

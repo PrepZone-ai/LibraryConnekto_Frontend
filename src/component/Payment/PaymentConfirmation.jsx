@@ -11,6 +11,7 @@ const PaymentConfirmation = () => {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
 
@@ -45,80 +46,61 @@ const PaymentConfirmation = () => {
     }
   };
 
+  const handleConfirmPendingPayment = async () => {
+    setConfirmingPayment(true);
+    setError('');
+    try {
+      const result = await PaymentService.resumePendingPayment('booking_full');
+      if (result) {
+        navigate('/payment/success', {
+          state: {
+            booking: result,
+            message:
+              'Payment successful! Your seat has been confirmed and login credentials have been sent to your email.',
+          },
+        });
+      }
+    } catch (err) {
+      setError(err?.message || 'Could not confirm payment yet. Please try again.');
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
+
   const handlePayment = async () => {
     if (!booking) return;
 
     try {
       setPaymentLoading(true);
+      setConfirmingPayment(true);
       setError('');
 
-      // Create Razorpay order for the booking
       const orderData = {
         booking_id: bookingId,
-        amount: booking.amount * 100, // Convert to paise
-        currency: 'INR'
+        amount: booking.amount * 100,
+        currency: 'INR',
       };
 
-       const order = await apiClient.postAnonymous('/booking/create-razorpay-order', orderData);
+      const order = await apiClient.postAnonymous('/booking/create-razorpay-order', orderData);
 
-      // Initialize Razorpay
-      const Razorpay = await PaymentService.initializePaymentGateway();
-
-      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!razorpayKey) {
-        throw new Error('Razorpay key not configured. Please check environment variables.');
-      }
-
-      const options = {
-        key: razorpayKey,
-        amount: order.amount,
-        currency: order.currency,
-        name: 'Library Connekto',
-        description: `Seat Booking Payment - ${booking.library_name || 'Library'}`,
-        order_id: order.id,
-        handler: async (response) => {
-          try {
-            // Verify payment
-            const verificationData = {
-              booking_id: bookingId,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            };
-
-             const verificationResponse = await apiClient.postAnonymous('/booking/verify-razorpay-payment', verificationData);
-            
-            if (verificationResponse) {
-              // Payment successful - redirect to success page or show success message
-              navigate('/payment/success', { 
-                state: { 
-                  booking: verificationResponse,
-                  message: 'Payment successful! Your seat has been confirmed and login credentials have been sent to your email.'
-                }
-              });
-            }
-          } catch (error) {
-            console.error('Payment verification failed:', error);
-            setError('Payment verification failed. Please contact support.');
-          }
-        },
+      const verificationResponse = await PaymentService.payFullBookingAmount({
+        order,
+        finalizePayload: { booking_id: bookingId },
         prefill: {
           name: booking.name,
           email: booking.email,
-          contact: booking.mobile
+          contact: booking.mobile,
         },
-        theme: {
-          color: '#9333ea'
-        },
-        modal: {
-          ondismiss: () => {
-            setPaymentLoading(false);
-          }
-        }
-      };
+        onProgress: () => setConfirmingPayment(true),
+      });
 
-      const razorpay = new Razorpay(options);
-      razorpay.open();
+      navigate('/payment/success', {
+        state: {
+          booking: verificationResponse,
+          message:
+            'Payment successful! Your seat has been confirmed and login credentials have been sent to your email.',
+        },
+      });
 
     } catch (error) {
       console.error('Payment initialization failed:', error);
@@ -135,6 +117,7 @@ const PaymentConfirmation = () => {
       setError(errorMessage);
     } finally {
       setPaymentLoading(false);
+      setConfirmingPayment(false);
     }
   };
 
@@ -293,6 +276,22 @@ const PaymentConfirmation = () => {
                     </svg>
                     <p className="text-red-300 text-sm">{error}</p>
                   </div>
+                  {PaymentService.loadPendingPayment('booking_full') && (
+                    <button
+                      type="button"
+                      onClick={handleConfirmPendingPayment}
+                      disabled={confirmingPayment}
+                      className="mt-3 w-full py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold disabled:opacity-50"
+                    >
+                      {confirmingPayment ? 'Confirming payment…' : 'I already paid — confirm booking'}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {confirmingPayment && !error && (
+                <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4 mb-6">
+                  <p className="text-blue-200 text-sm">Confirming your payment… Please wait.</p>
                 </div>
               )}
 
@@ -305,7 +304,7 @@ const PaymentConfirmation = () => {
                 {paymentLoading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                    Processing Payment...
+                    {confirmingPayment ? 'Confirming payment…' : 'Processing Payment...'}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center">
