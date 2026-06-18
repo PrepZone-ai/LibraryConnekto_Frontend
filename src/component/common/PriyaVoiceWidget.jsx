@@ -14,6 +14,14 @@ const PUBLIC_WIDGET_PATHS = new Set([
   '/admin/auth',
 ]);
 
+const EMPTY_CONFIG = {
+  publicKey: '',
+  voiceAgentId: '',
+  agentVersion: '2',
+  widgetTitle: 'Priya',
+  whiteLabelToken: '',
+};
+
 function shouldShowPriyaWidget(pathname) {
   if (PUBLIC_WIDGET_PATHS.has(pathname)) return true;
   return pathname.startsWith('/library/');
@@ -65,43 +73,78 @@ function loadRetellWidget({
   document.head.appendChild(script);
 }
 
-function getRetellConfig() {
+function getBuildTimeConfig() {
   return {
-    publicKey: import.meta.env.VITE_RETELL_PUBLIC_KEY,
-    voiceAgentId: import.meta.env.VITE_RETELL_VOICE_AGENT_ID,
-    agentVersion: import.meta.env.VITE_RETELL_AGENT_VERSION || '1',
+    publicKey: import.meta.env.VITE_RETELL_PUBLIC_KEY || '',
+    voiceAgentId: import.meta.env.VITE_RETELL_VOICE_AGENT_ID || '',
+    agentVersion: import.meta.env.VITE_RETELL_AGENT_VERSION || '2',
     widgetTitle: import.meta.env.VITE_RETELL_WIDGET_TITLE || 'Priya',
     whiteLabelToken:
       import.meta.env.VITE_RETELL_WHITE_LABEL ||
-      import.meta.env.VITE_RETELL_WHITE_LABEL_TOKEN,
+      import.meta.env.VITE_RETELL_WHITE_LABEL_TOKEN ||
+      '',
   };
+}
+
+async function loadRuntimeConfig() {
+  const buildTime = getBuildTimeConfig();
+  if (buildTime.publicKey && buildTime.voiceAgentId) {
+    return buildTime;
+  }
+
+  try {
+    const response = await fetch('/retell-config.json', { cache: 'no-store' });
+    if (!response.ok) return EMPTY_CONFIG;
+
+    const json = await response.json();
+    return {
+      publicKey: json.publicKey || '',
+      voiceAgentId: json.voiceAgentId || '',
+      agentVersion: json.agentVersion || '2',
+      widgetTitle: json.widgetTitle || 'Priya',
+      whiteLabelToken: json.whiteLabelToken || '',
+    };
+  } catch {
+    return EMPTY_CONFIG;
+  }
 }
 
 /**
  * Always-visible "Call to Priya" button on public pages.
- * Retell env vars must be set in Vercel before build (VITE_* are baked at build time).
+ * Config comes from /retell-config.json (generated at deploy) or VITE_* env.
  */
 export default function PriyaVoiceWidget() {
   const { pathname } = useLocation();
+  const [config, setConfig] = useState(EMPTY_CONFIG);
+  const [configReady, setConfigReady] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  const config = getRetellConfig();
   const isConfigured = Boolean(config.publicKey && config.voiceAgentId);
 
   useEffect(() => {
+    let active = true;
+
     if (!shouldShowPriyaWidget(pathname)) {
       removeRetellWidgetArtifacts();
       return undefined;
     }
 
-    if (!isConfigured && import.meta.env.PROD) {
-      console.error(
-        '[Call to Priya] Missing VITE_RETELL_PUBLIC_KEY or VITE_RETELL_VOICE_AGENT_ID in production build. ' +
-          'Add them in Vercel → Settings → Environment Variables → redeploy.',
-      );
-    }
+    loadRuntimeConfig().then((nextConfig) => {
+      if (!active) return;
+      setConfig(nextConfig);
+      setConfigReady(true);
 
-    return undefined;
-  }, [pathname, isConfigured]);
+      if (!nextConfig.publicKey || !nextConfig.voiceAgentId) {
+        console.error(
+          '[Call to Priya] Retell config missing. Ensure VITE_RETELL_* vars are set in Vercel ' +
+            '(Production) and redeploy so public/retell-config.json is generated.',
+        );
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   const handleCallClick = useCallback(() => {
     if (!isConfigured) {
@@ -127,14 +170,16 @@ export default function PriyaVoiceWidget() {
     <button
       type="button"
       onClick={handleCallClick}
-      disabled={isStarting}
+      disabled={isStarting || !configReady}
       aria-label="Call to Priya for library management enquiry"
       className="fixed bottom-6 right-6 z-[70] flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 transition hover:scale-105 hover:shadow-purple-500/50 disabled:cursor-wait disabled:opacity-80"
     >
       <span aria-hidden="true" className="text-lg leading-none">
         {isStarting ? '⏳' : '📞'}
       </span>
-      <span>{isStarting ? 'Connecting...' : 'Call to Priya'}</span>
+      <span>
+        {!configReady ? 'Loading...' : isStarting ? 'Connecting...' : 'Call to Priya'}
+      </span>
     </button>
   );
 }

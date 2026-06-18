@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/generate-retell-config.mjs && vite",
+    "prebuild": "node scripts/generate-retell-config.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
