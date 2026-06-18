@@ -53,12 +53,14 @@ import PaymentConfirmation from './component/Payment/PaymentConfirmation'
 import PaymentSuccess from './component/Payment/PaymentSuccess'
 import TransferPayment from './component/Payment/TransferPayment'
 import ScrollToTop from './component/common/ScrollToTop'
+import PriyaVoiceWidget from './component/common/PriyaVoiceWidget'
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <ScrollToTop />
+        <PriyaVoiceWidget />
         <Routes>
           <Route element={<AdminPlatformSubscriptionGate />}>
           <Route element={<AdminDetailsGate />}>
