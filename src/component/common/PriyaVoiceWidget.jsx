@@ -1,5 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+
+/** Marketing link: https://libraryconnekto.me/?call=priya */
+export const PRIYA_CALL_QUERY = 'call';
+export const PRIYA_CALL_VALUE = 'priya';
 
 const RETELL_WIDGET_SCRIPT_ID = 'retell-widget';
 const RETELL_WIDGET_SCRIPT_SRC = 'https://dashboard.retellai.com/retell-widget-v2.js';
@@ -115,10 +119,13 @@ async function loadRuntimeConfig() {
  */
 export default function PriyaVoiceWidget() {
   const { pathname } = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [config, setConfig] = useState(EMPTY_CONFIG);
   const [configReady, setConfigReady] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const autoCallTriggered = useRef(false);
   const isConfigured = Boolean(config.publicKey && config.voiceAgentId);
+  const shouldAutoCall = searchParams.get(PRIYA_CALL_QUERY) === PRIYA_CALL_VALUE;
 
   useEffect(() => {
     let active = true;
@@ -146,7 +153,7 @@ export default function PriyaVoiceWidget() {
     };
   }, [pathname]);
 
-  const handleCallClick = useCallback(() => {
+  const startPriyaCall = useCallback(() => {
     if (!isConfigured) {
       window.alert(
         'Call assistant is not configured yet. Please use the Contact page or try again later.',
@@ -162,24 +169,68 @@ export default function PriyaVoiceWidget() {
     }, 2500);
   }, [config, isConfigured]);
 
+  const handleCallClick = useCallback(() => {
+    startPriyaCall();
+  }, [startPriyaCall]);
+
+  useEffect(() => {
+    if (
+      autoCallTriggered.current ||
+      !shouldShowPriyaWidget(pathname) ||
+      !shouldAutoCall ||
+      !configReady ||
+      !isConfigured
+    ) {
+      return;
+    }
+
+    autoCallTriggered.current = true;
+    startPriyaCall();
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete(PRIYA_CALL_QUERY);
+    setSearchParams(nextParams, { replace: true });
+  }, [
+    pathname,
+    shouldAutoCall,
+    configReady,
+    isConfigured,
+    searchParams,
+    setSearchParams,
+    startPriyaCall,
+  ]);
+
   if (!shouldShowPriyaWidget(pathname)) {
     return null;
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleCallClick}
-      disabled={isStarting || !configReady}
-      aria-label="Call to Priya for library management enquiry"
-      className="fixed bottom-6 right-6 z-[70] flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 transition hover:scale-105 hover:shadow-purple-500/50 disabled:cursor-wait disabled:opacity-80"
-    >
-      <span aria-hidden="true" className="text-lg leading-none">
-        {isStarting ? '⏳' : '📞'}
-      </span>
-      <span>
-        {!configReady ? 'Loading...' : isStarting ? 'Connecting...' : 'Call to Priya'}
-      </span>
-    </button>
+    <div className="group fixed bottom-6 right-6 z-[70]">
+      <div
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full right-0 mb-3 w-64 rounded-xl border border-purple-400/30 bg-slate-900/95 px-4 py-3 text-sm leading-relaxed text-slate-100 shadow-xl shadow-purple-500/20 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0"
+      >
+        <p className="font-semibold text-purple-200">Namaste! Main Priya hoon.</p>
+        <p className="mt-1 text-slate-300">
+          Main aapki library ko digitalize karne mein help kar sakti hoon — online seat booking,
+          Razorpay payments, GPS attendance aur revenue dashboard.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={handleCallClick}
+        disabled={isStarting || !configReady}
+        aria-label="Call to Priya for library management enquiry"
+        title="Priya se baat karein — library digitalize karne mein help"
+        className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 transition hover:scale-105 hover:shadow-purple-500/50 disabled:cursor-wait disabled:opacity-80"
+      >
+        <span aria-hidden="true" className="text-lg leading-none">
+          {isStarting ? '⏳' : '📞'}
+        </span>
+        <span>
+          {!configReady ? 'Loading...' : isStarting ? 'Connecting...' : 'Call to Priya'}
+        </span>
+      </button>
+    </div>
   );
 }
