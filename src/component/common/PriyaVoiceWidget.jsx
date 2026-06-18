@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const RETELL_WIDGET_SCRIPT_ID = 'retell-widget';
@@ -32,8 +32,15 @@ function setWidgetAttr(script, name, value) {
   }
 }
 
-function loadRetellWidget({ publicKey, voiceAgentId, agentVersion, widgetTitle, whiteLabelToken }) {
-  if (document.getElementById(RETELL_WIDGET_SCRIPT_ID)) return;
+function loadRetellWidget({
+  publicKey,
+  voiceAgentId,
+  agentVersion,
+  widgetTitle,
+  whiteLabelToken,
+  autoOpen = false,
+}) {
+  removeRetellWidgetArtifacts();
 
   const script = document.createElement('script');
   script.id = RETELL_WIDGET_SCRIPT_ID;
@@ -46,9 +53,9 @@ function loadRetellWidget({ publicKey, voiceAgentId, agentVersion, widgetTitle, 
   setWidgetAttr(script, 'data-agent-version', agentVersion);
   setWidgetAttr(script, 'data-title', widgetTitle);
   setWidgetAttr(script, 'data-bot-name', 'Priya');
-  setWidgetAttr(script, 'data-fab-text', 'Priya se baat karein');
+  setWidgetAttr(script, 'data-fab-text', 'Call to Priya');
   setWidgetAttr(script, 'data-color', '#9333ea');
-  setWidgetAttr(script, 'data-auto-open', 'false');
+  setWidgetAttr(script, 'data-auto-open', autoOpen ? 'true' : 'false');
   setWidgetAttr(script, 'data-show-ai-popup', 'false');
 
   if (whiteLabelToken) {
@@ -58,18 +65,27 @@ function loadRetellWidget({ publicKey, voiceAgentId, agentVersion, widgetTitle, 
   document.head.appendChild(script);
 }
 
+function getRetellConfig() {
+  return {
+    publicKey: import.meta.env.VITE_RETELL_PUBLIC_KEY,
+    voiceAgentId: import.meta.env.VITE_RETELL_VOICE_AGENT_ID,
+    agentVersion: import.meta.env.VITE_RETELL_AGENT_VERSION || '1',
+    widgetTitle: import.meta.env.VITE_RETELL_WIDGET_TITLE || 'Priya',
+    whiteLabelToken:
+      import.meta.env.VITE_RETELL_WHITE_LABEL ||
+      import.meta.env.VITE_RETELL_WHITE_LABEL_TOKEN,
+  };
+}
+
 /**
- * Retell voice widget for library-owner enquiries.
- * Requires VITE_RETELL_* vars at Vercel build time (not just local .env).
+ * Always-visible "Call to Priya" button on public pages.
+ * Retell env vars must be set in Vercel before build (VITE_* are baked at build time).
  */
 export default function PriyaVoiceWidget() {
   const { pathname } = useLocation();
-  const publicKey = import.meta.env.VITE_RETELL_PUBLIC_KEY;
-  const voiceAgentId = import.meta.env.VITE_RETELL_VOICE_AGENT_ID;
-  const agentVersion = import.meta.env.VITE_RETELL_AGENT_VERSION || '1';
-  const widgetTitle = import.meta.env.VITE_RETELL_WIDGET_TITLE || 'Priya';
-  const whiteLabelToken = import.meta.env.VITE_RETELL_WHITE_LABEL;
-  const isConfigured = Boolean(publicKey && voiceAgentId);
+  const [isStarting, setIsStarting] = useState(false);
+  const config = getRetellConfig();
+  const isConfigured = Boolean(config.publicKey && config.voiceAgentId);
 
   useEffect(() => {
     if (!shouldShowPriyaWidget(pathname)) {
@@ -77,26 +93,48 @@ export default function PriyaVoiceWidget() {
       return undefined;
     }
 
-    if (!isConfigured) {
-      if (import.meta.env.DEV) {
-        console.warn(
-          '[PriyaVoiceWidget] Missing VITE_RETELL_PUBLIC_KEY or VITE_RETELL_VOICE_AGENT_ID. ' +
-            'Add them to Vercel Environment Variables and redeploy.',
-        );
-      }
-      return undefined;
+    if (!isConfigured && import.meta.env.PROD) {
+      console.error(
+        '[Call to Priya] Missing VITE_RETELL_PUBLIC_KEY or VITE_RETELL_VOICE_AGENT_ID in production build. ' +
+          'Add them in Vercel → Settings → Environment Variables → redeploy.',
+      );
     }
 
-    loadRetellWidget({
-      publicKey,
-      voiceAgentId,
-      agentVersion,
-      widgetTitle,
-      whiteLabelToken,
-    });
-
     return undefined;
-  }, [pathname, isConfigured, publicKey, voiceAgentId, agentVersion, widgetTitle, whiteLabelToken]);
+  }, [pathname, isConfigured]);
 
-  return null;
+  const handleCallClick = useCallback(() => {
+    if (!isConfigured) {
+      window.alert(
+        'Call assistant is not configured yet. Please use the Contact page or try again later.',
+      );
+      return;
+    }
+
+    setIsStarting(true);
+    loadRetellWidget({ ...config, autoOpen: true });
+
+    window.setTimeout(() => {
+      setIsStarting(false);
+    }, 2500);
+  }, [config, isConfigured]);
+
+  if (!shouldShowPriyaWidget(pathname)) {
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCallClick}
+      disabled={isStarting}
+      aria-label="Call to Priya for library management enquiry"
+      className="fixed bottom-6 right-6 z-[70] flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 transition hover:scale-105 hover:shadow-purple-500/50 disabled:cursor-wait disabled:opacity-80"
+    >
+      <span aria-hidden="true" className="text-lg leading-none">
+        {isStarting ? '⏳' : '📞'}
+      </span>
+      <span>{isStarting ? 'Connecting...' : 'Call to Priya'}</span>
+    </button>
+  );
 }
