@@ -304,7 +304,10 @@ const AdminDashboard = () => {
             <ProfileIncompleteAlert profileData={adminDetails} />
           )}
 
-          {platformSub && (
+          {platformSub &&
+            (platformSub.status !== 'trial' ||
+              platformSub.days_left == null ||
+              platformSub.days_left <= 5) && (
             <div
               className={`mb-6 rounded-xl border px-5 py-4 flex flex-wrap items-center justify-between gap-4 ${
                 platformSub.status === 'expired'
