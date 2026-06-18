@@ -90,32 +90,51 @@ function getBuildTimeConfig() {
   };
 }
 
+function normalizeRetellConfig(json) {
+  return {
+    publicKey: json.publicKey || '',
+    voiceAgentId: json.voiceAgentId || '',
+    agentVersion: json.agentVersion || '2',
+    widgetTitle: json.widgetTitle || 'Priya',
+    whiteLabelToken: json.whiteLabelToken || '',
+  };
+}
+
+function isValidRetellConfig(config) {
+  return Boolean(config.publicKey && config.voiceAgentId);
+}
+
+async function fetchRetellConfigFromUrl(url) {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) return null;
+
+  const json = await response.json();
+  const config = normalizeRetellConfig(json);
+  return isValidRetellConfig(config) ? config : null;
+}
+
 async function loadRuntimeConfig() {
   const buildTime = getBuildTimeConfig();
-  if (buildTime.publicKey && buildTime.voiceAgentId) {
+  if (isValidRetellConfig(buildTime)) {
     return buildTime;
   }
 
-  try {
-    const response = await fetch('/retell-config.json', { cache: 'no-store' });
-    if (!response.ok) return EMPTY_CONFIG;
-
-    const json = await response.json();
-    return {
-      publicKey: json.publicKey || '',
-      voiceAgentId: json.voiceAgentId || '',
-      agentVersion: json.agentVersion || '2',
-      widgetTitle: json.widgetTitle || 'Priya',
-      whiteLabelToken: json.whiteLabelToken || '',
-    };
-  } catch {
-    return EMPTY_CONFIG;
+  const endpoints = ['/api/retell-config', '/retell-config.json'];
+  for (const url of endpoints) {
+    try {
+      const config = await fetchRetellConfigFromUrl(url);
+      if (config) return config;
+    } catch {
+      // try next endpoint
+    }
   }
+
+  return EMPTY_CONFIG;
 }
 
 /**
  * Always-visible "Call to Priya" button on public pages.
- * Config comes from /retell-config.json (generated at deploy) or VITE_* env.
+ * Config from /api/retell-config (Vercel runtime env), static JSON fallback, or VITE_* at dev build.
  */
 export default function PriyaVoiceWidget() {
   const { pathname } = useLocation();
@@ -140,10 +159,10 @@ export default function PriyaVoiceWidget() {
       setConfig(nextConfig);
       setConfigReady(true);
 
-      if (!nextConfig.publicKey || !nextConfig.voiceAgentId) {
+      if (!isValidRetellConfig(nextConfig)) {
         console.error(
-          '[Call to Priya] Retell config missing. Ensure VITE_RETELL_* vars are set in Vercel ' +
-            '(Production) and redeploy so public/retell-config.json is generated.',
+          '[Call to Priya] Retell config missing. Set VITE_RETELL_PUBLIC_KEY and ' +
+            'VITE_RETELL_VOICE_AGENT_ID in Vercel → Production env, then redeploy.',
         );
       }
     });
