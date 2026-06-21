@@ -7,6 +7,10 @@ on:
       - "**.md"
       - "android/**"
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Build Android APK and AAB"]
+    types: [completed]
+    branches: [main, master]
 
 concurrency:
   group: deploy-frontend-${{ github.ref }}
@@ -14,6 +18,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -24,8 +29,13 @@ jobs:
         run: |
           git init .
           git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --depth=1 origin "${GITHUB_SHA}"
-          git checkout --detach FETCH_HEAD
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            git fetch --depth=1 origin "${{ github.event.workflow_run.head_sha }}"
+            git checkout --detach FETCH_HEAD
+          else
+            git fetch --depth=1 origin "${GITHUB_SHA}"
+            git checkout --detach FETCH_HEAD
+          fi
 
       - name: Setup Node.js 20
         run: |
@@ -40,6 +50,22 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Bundle latest Android APK for direct download
+        continue-on-error: true
+        run: |
+          mkdir -p public
+          RELEASE_JSON=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          APK_URL=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name=="LibraryConnekto.apk") | .browser_download_url' | head -n 1)
+          if [ -n "$APK_URL" ] && [ "$APK_URL" != "null" ]; then
+            curl -fsSL -L "$APK_URL" -o public/LibraryConnekto.apk
+            echo "Bundled APK for website download ($(du -h public/LibraryConnekto.apk | cut -f1))"
+          else
+            echo "::warning::No published APK release yet. The download button will work after the Android build workflow succeeds."
+          fi
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest

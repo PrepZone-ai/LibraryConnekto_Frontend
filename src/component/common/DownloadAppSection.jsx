@@ -14,7 +14,7 @@ const DownloadAppSection = ({ className = '' }) => {
     setIsDownloading(true);
     
     try {
-      triggerApkDownload();
+      await triggerApkDownload();
       setTimeout(() => {
         setIsDownloading(false);
       }, 2000);

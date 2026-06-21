@@ -14,6 +14,7 @@
     "generate:icons": "powershell -ExecutionPolicy Bypass -File generate-icons.ps1",
     "generate:icons:unix": "chmod +x generate-icons.sh && ./generate-icons.sh",
     "create:launcher": "powershell -ExecutionPolicy Bypass -File create-launcher-icon.ps1",
+    "create:launcher:unix": "chmod +x create-launcher-icon.sh && ./create-launcher-icon.sh",
     "build:apk": "powershell -ExecutionPolicy Bypass -File build-apk.ps1",
     "build:aab": "powershell -ExecutionPolicy Bypass -File build-aab.ps1",
     "build:apk:unix": "chmod +x build-apk.sh && ./build-apk.sh",

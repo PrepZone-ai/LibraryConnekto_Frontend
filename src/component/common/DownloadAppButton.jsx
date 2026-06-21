@@ -24,7 +24,7 @@ const DownloadAppButton = ({
     setIsDownloading(true);
 
     try {
-      triggerApkDownload();
+      await triggerApkDownload();
 
       setTimeout(() => {
         setIsDownloading(false);
