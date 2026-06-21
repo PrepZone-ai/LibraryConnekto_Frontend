@@ -25,9 +25,10 @@ export default function SelectRoleModal({ open, onClose, onSelect, appMode = fal
       navigate(role === 'admin' ? '/admin/dashboard' : '/student/dashboard', { replace: true })
     } else if (appMode) {
       if (role === 'admin') {
-        navigate('/admin/auth')
+        navigate('/admin/auth', { replace: true })
+      } else {
+        navigate('/', { replace: true })
       }
-      // Student in app mode: stay on App Home (no redirect)
     } else {
       navigate(role === 'admin' ? '/admin/auth' : '/student/login')
     }
