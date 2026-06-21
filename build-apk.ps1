@@ -17,6 +17,27 @@ try {
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
 
+$jbrCandidates = @(
+    "$env:LOCALAPPDATA\Programs\Android Studio\jbr",
+    "C:\Program Files\Android\Android Studio\jbr",
+    "$env:ProgramFiles\Android\Android Studio\jbr"
+)
+foreach ($jbr in $jbrCandidates) {
+    if (Test-Path "$jbr\bin\java.exe") {
+        $env:JAVA_HOME = $jbr
+        $env:PATH = "$jbr\bin;$env:PATH"
+        Write-Host "Using JAVA_HOME: $env:JAVA_HOME" -ForegroundColor Cyan
+        break
+    }
+}
+
+$env:VITE_API_BASE_URL = "https://api.libraryconnekto.me/api/v1"
+Write-Host "Using API: $env:VITE_API_BASE_URL" -ForegroundColor Cyan
+
+Write-Host "Generating launcher icons from Logo..." -ForegroundColor Yellow
+npm run create:launcher
+if ($LASTEXITCODE -ne 0) { exit 1 }
+
 Write-Host "Building web assets..." -ForegroundColor Yellow
 npm run build
 if ($LASTEXITCODE -ne 0) { exit 1 }

@@ -17,6 +17,26 @@ $sizes = @{
 }
 
 $resRoot = "android/app/src/main/res"
+$script:DrawingAsmLoaded = $false
+
+function Save-ResizedIcon {
+    param([string]$Source, [string]$Dest, [int]$Px)
+    if (Get-Command magick -ErrorAction SilentlyContinue) {
+        magick convert $Source -resize "${Px}x${Px}" $Dest
+        return
+    }
+    if (-not $script:DrawingAsmLoaded) {
+        Add-Type -AssemblyName System.Drawing
+        $script:DrawingAsmLoaded = $true
+    }
+    $src = [System.Drawing.Image]::FromFile((Resolve-Path $Source))
+    $bmp = New-Object System.Drawing.Bitmap $Px, $Px
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $g.DrawImage($src, 0, 0, $Px, $Px)
+    $bmp.Save($Dest, [System.Drawing.Imaging.ImageFormat]::Png)
+    $g.Dispose(); $bmp.Dispose(); $src.Dispose()
+}
 
 foreach ($folder in $sizes.Keys) {
     $dir = Join-Path $resRoot $folder
@@ -28,15 +48,9 @@ foreach ($folder in $sizes.Keys) {
     $launcher = Join-Path $dir "ic_launcher.png"
     $launcherRound = Join-Path $dir "ic_launcher_round.png"
 
-    if (Get-Command magick -ErrorAction SilentlyContinue) {
-        magick convert $sourceLogo -resize "${px}x${px}" $launcher
-        magick convert $sourceLogo -resize "${px}x${px}" $launcherRound
-        Write-Host "Generated $folder icons (${px}px)" -ForegroundColor Green
-    } else {
-        Copy-Item $sourceLogo $launcher -Force
-        Copy-Item $sourceLogo $launcherRound -Force
-        Write-Host "Copied Logo.png to $folder (install ImageMagick for proper resize)" -ForegroundColor Yellow
-    }
+    Save-ResizedIcon -Source $sourceLogo -Dest $launcher -Px $px
+    Save-ResizedIcon -Source $sourceLogo -Dest $launcherRound -Px $px
+    Write-Host "Generated $folder icons (${px}px)" -ForegroundColor Green
 }
 
 Write-Host "Launcher icons ready under $resRoot" -ForegroundColor Cyan

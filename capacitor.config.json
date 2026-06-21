@@ -6,6 +6,9 @@
     "backgroundColor": "#1a1f2b"
   },
   "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
     "StatusBar": {
       "style": "DARK",
       "backgroundColor": "#1a1f2b"

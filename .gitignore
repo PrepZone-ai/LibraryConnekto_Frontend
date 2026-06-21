@@ -4,7 +4,6 @@ node_modules/
 # Build outputs
 dist/
 dist-ssr/
-*.local
 
 # Logs
 logs/
@@ -17,13 +16,10 @@ lerna-debug.log*
 
 # Environment and secrets (never commit)
 .env
-.env.local
-public/retell-config.json
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*.local
 .env.*
+!.env*.example
+!.env.example
+public/retell-config.json
 .secrets
 .secrets.*
 secrets.*
@@ -59,8 +55,9 @@ coverage/
 *.lcov
 test-results/
 
-# Vite
+# Vite / tooling cache
 .vite/
+.eslintcache
 
 # Stale production HTML snapshot (built output lives in dist/)
 prod-index.html
@@ -69,6 +66,9 @@ prod-index.html
 .cache/
 .turbo/
 *.tsbuildinfo
+
+# Vercel local project metadata
+.vercel
 
 # ------------------------------------------------------------------------------
 # Android / Gradle (native build)
@@ -94,10 +94,12 @@ keystore-backup/
 android/app/*.keystore
 android/app/*.jks
 android/key.properties
-# Release artifacts
+
+# Release artifacts (never commit)
 android/app/release/
 Library-Connekto-Release.aab
 Library-Connekto-Release.apk
+Library-Connekto-Debug.apk
 *.aab
 *.apk
 
@@ -107,5 +109,3 @@ Library-Connekto-Release.apk
 # ios/*.xcworkspace/xcuserdata/
 # ios/*.xcodeproj/xcuserdata/
 # ios/*.xcodeproj/project.xcworkspace/xcuserdata/
-.vercel
-.env*.local
