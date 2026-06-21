@@ -19,6 +19,7 @@ missing_icons=0
 for density in "${icon_densities[@]}"; do
     launcher_icon="android/app/src/main/res/$density/ic_launcher.png"
     launcher_round_icon="android/app/src/main/res/$density/ic_launcher_round.png"
+    launcher_foreground="android/app/src/main/res/$density/ic_launcher_foreground.png"
     
     if [ ! -f "$launcher_icon" ]; then
         echo "❌ Missing: $launcher_icon"
@@ -27,6 +28,11 @@ for density in "${icon_densities[@]}"; do
     
     if [ ! -f "$launcher_round_icon" ]; then
         echo "❌ Missing: $launcher_round_icon"
+        missing_icons=$((missing_icons + 1))
+    fi
+
+    if [ ! -f "$launcher_foreground" ]; then
+        echo "❌ Missing: $launcher_foreground"
         missing_icons=$((missing_icons + 1))
     fi
 done
