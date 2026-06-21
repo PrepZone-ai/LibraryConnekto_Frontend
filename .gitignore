@@ -57,9 +57,13 @@ Thumbs.db
 coverage/
 .nyc_output/
 *.lcov
+test-results/
 
 # Vite
 .vite/
+
+# Stale production HTML snapshot (built output lives in dist/)
+prod-index.html
 
 # Cache and temp
 .cache/
@@ -69,6 +73,7 @@ coverage/
 # ------------------------------------------------------------------------------
 # Android / Gradle (native build)
 # ------------------------------------------------------------------------------
+**/.gradle/
 android/.gradle/
 android/.idea/
 android/local.properties
@@ -78,6 +83,13 @@ android/build/
 android/app/build/
 android/**/build/
 android/**/.externalNativeBuild/
+
+# Legacy TWA Android project (replaced by Capacitor) — keep locally only
+android-twa-backup/
+
+# Signing key backups — never commit
+keystore-backup/
+
 # Keystores and signing (never commit)
 android/app/*.keystore
 android/app/*.jks
