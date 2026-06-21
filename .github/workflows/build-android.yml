@@ -44,7 +44,10 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install ImageMagick for launcher icons
-        run: sudo apt-get update && sudo apt-get install -y imagemagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+          command -v magick || command -v convert
 
       - name: Generate Android launcher icons
         run: chmod +x create-launcher-icon.sh && ./create-launcher-icon.sh

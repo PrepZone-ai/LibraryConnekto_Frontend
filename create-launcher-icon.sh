@@ -9,10 +9,19 @@ if [ ! -f "$SOURCE" ]; then
   SOURCE="public/icons/icon-192.svg"
 fi
 
-if ! command -v magick >/dev/null 2>&1; then
-  echo "ImageMagick (magick) is required to generate launcher icons." >&2
-  exit 1
-fi
+resize_icon() {
+  local src="$1"
+  local size="$2"
+  local dest="$3"
+  if command -v magick >/dev/null 2>&1; then
+    magick convert "$src" -resize "${size}x${size}" "$dest"
+  elif command -v convert >/dev/null 2>&1; then
+    convert "$src" -resize "${size}x${size}" "$dest"
+  else
+    echo "ImageMagick (magick or convert) is required to generate launcher icons." >&2
+    exit 1
+  fi
+}
 
 declare -A SIZES=(
   ["mipmap-mdpi"]=48
@@ -28,7 +37,7 @@ for folder in "${!SIZES[@]}"; do
   px="${SIZES[$folder]}"
   dir="$RES_ROOT/$folder"
   mkdir -p "$dir"
-  magick convert "$SOURCE" -resize "${px}x${px}" "$dir/ic_launcher.png"
+  resize_icon "$SOURCE" "$px" "$dir/ic_launcher.png"
   cp "$dir/ic_launcher.png" "$dir/ic_launcher_round.png"
   echo "Generated $folder icons (${px}px)"
 done
