@@ -114,6 +114,13 @@ jobs:
             exit 1
           fi
 
+      - name: Upload website APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-apk
+          path: release-assets/LibraryConnekto.apk
+          if-no-files-found: error
+
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:

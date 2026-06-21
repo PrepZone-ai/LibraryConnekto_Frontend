@@ -39,6 +39,12 @@
         { "key": "Content-Disposition", "value": "attachment; filename=\"LibraryConnekto.apk\"" },
         { "key": "Cache-Control", "value": "public, max-age=3600" }
       ]
+    },
+    {
+      "source": "/api/apk-download",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
     }
   ]
 }

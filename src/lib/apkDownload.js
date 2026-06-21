@@ -1,6 +1,9 @@
 /** Same-origin APK path — bundled on Vercel after the Android CI workflow publishes a release. */
 export const DEFAULT_APK_DOWNLOAD_URL = '/LibraryConnekto.apk';
 
+/** Fallback when the static APK has not been deployed yet. */
+export const APK_DOWNLOAD_FALLBACK_URL = '/api/apk-download';
+
 export const APK_FILENAME = 'LibraryConnekto.apk';
 
 export const APK_DOWNLOAD_URL =
@@ -37,11 +40,25 @@ async function downloadViaFetch(url, filename) {
   }
 }
 
+async function isDownloadAvailable(url) {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Start an APK download in-place without opening a new browser tab. */
 export async function triggerApkDownload() {
-  const url = APK_DOWNLOAD_URL;
+  let url = APK_DOWNLOAD_URL;
 
   if (!isExternalApkUrl(url)) {
+    const staticAvailable = await isDownloadAvailable(url);
+    if (!staticAvailable && url !== APK_DOWNLOAD_FALLBACK_URL) {
+      url = APK_DOWNLOAD_FALLBACK_URL;
+    }
+
     downloadViaAnchor(url, APK_FILENAME);
     return;
   }

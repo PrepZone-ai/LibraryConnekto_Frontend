@@ -16,6 +16,10 @@ concurrency:
   group: deploy-frontend-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   deploy:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
@@ -52,20 +56,89 @@ jobs:
         run: npm ci
 
       - name: Bundle latest Android APK for direct download
-        continue-on-error: true
         run: |
+          set -euo pipefail
           mkdir -p public
-          RELEASE_JSON=$(curl -fsSL \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-          APK_URL=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name=="LibraryConnekto.apk") | .browser_download_url' | head -n 1)
-          if [ -n "$APK_URL" ] && [ "$APK_URL" != "null" ]; then
-            curl -fsSL -L "$APK_URL" -o public/LibraryConnekto.apk
-            echo "Bundled APK for website download ($(du -h public/LibraryConnekto.apk | cut -f1))"
-          else
-            echo "::warning::No published APK release yet. The download button will work after the Android build workflow succeeds."
+
+          bundle_from_artifact() {
+            local run_id="$1"
+            local artifacts artifact_id apk_file
+
+            artifacts=$(curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/runs/${run_id}/artifacts")
+
+            for name in website-apk release-apk debug-apk; do
+              artifact_id=$(echo "$artifacts" | jq -r --arg n "$name" '.artifacts[] | select(.name==$n) | .id' | head -n 1)
+              if [ -z "$artifact_id" ] || [ "$artifact_id" = "null" ]; then
+                continue
+              fi
+
+              rm -rf /tmp/apk-extract /tmp/apk-artifact.zip
+              curl -fsSL -L \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${artifact_id}/zip" \
+                -o /tmp/apk-artifact.zip
+              unzip -qo /tmp/apk-artifact.zip -d /tmp/apk-extract
+              apk_file=$(find /tmp/apk-extract -type f -name '*.apk' | head -n 1)
+              if [ -n "$apk_file" ]; then
+                cp "$apk_file" public/LibraryConnekto.apk
+                echo "Bundled APK from workflow artifact ${name} ($(du -h public/LibraryConnekto.apk | cut -f1))"
+                return 0
+              fi
+            done
+
+            return 1
+          }
+
+          bundle_from_release() {
+            local release_json apk_api_url
+
+            release_json=$(curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+            apk_api_url=$(echo "$release_json" | jq -r '.assets[] | select(.name=="LibraryConnekto.apk") | .url' | head -n 1)
+            if [ -z "$apk_api_url" ] || [ "$apk_api_url" = "null" ]; then
+              return 1
+            fi
+
+            curl -fsSL -L \
+              -H "Accept: application/octet-stream" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "$apk_api_url" \
+              -o public/LibraryConnekto.apk
+            echo "Bundled APK from GitHub release ($(du -h public/LibraryConnekto.apk | cut -f1))"
+          }
+
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            RUN_ID="${{ github.event.workflow_run.id }}"
+            for attempt in 1 2 3 4 5; do
+              if bundle_from_artifact "$RUN_ID"; then
+                exit 0
+              fi
+              echo "Workflow artifacts not ready yet (attempt ${attempt}/5), waiting..."
+              sleep 15
+            done
+            echo "::warning::Workflow artifacts unavailable, trying GitHub release..."
           fi
+
+          for attempt in 1 2 3 4 5; do
+            if bundle_from_release; then
+              exit 0
+            fi
+            echo "GitHub release not ready yet (attempt ${attempt}/5), waiting..."
+            sleep 10
+          done
+
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "::error::Failed to bundle APK for website download after Android build."
+            exit 1
+          fi
+
+          echo "::warning::No published APK release yet. Website download will use /api/apk-download fallback."
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
