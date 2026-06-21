@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import useNearbyLibraries from '../../hooks/useNearbyLibraries';
+import { APP_LOGO_URL } from '../../lib/assets';
 import SelectRoleModal from '../Auth/SelectRoleModal';
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import LibraryCard from '../Library/LibraryCard';
+import AppAdminHomePanels from './AppAdminHomePanels';
+import AppHomeHero from './AppHomeHero';
+
+const NEARBY_LIBRARY_COUNT = 4;
 
 function QuickAction({ to, label, description, color = 'purple' }) {
   const colorMap = {
@@ -17,7 +22,7 @@ function QuickAction({ to, label, description, color = 'purple' }) {
   return (
     <Link
       to={to}
-      className={`block rounded-xl p-4 border bg-gradient-to-br transition-all duration-200 ${colorMap[color]}`}
+      className={`block rounded-xl p-4 border bg-gradient-to-br transition-all duration-200 active:scale-[0.98] ${colorMap[color]}`}
     >
       <div className="font-semibold text-white">{label}</div>
       {description && <div className="text-sm text-slate-400 mt-1">{description}</div>}
@@ -25,130 +30,182 @@ function QuickAction({ to, label, description, color = 'purple' }) {
   );
 }
 
-function StudentGuestHome({ userLocation, libraries, loading }) {
+function NearbyLibrariesSection({ libraries, loading, userLocation, usingFallbackList }) {
+  const hasDistanceSort =
+    userLocation &&
+    !usingFallbackList &&
+    libraries.some((lib) => lib.distance != null && lib.distance !== undefined);
+
+  const sectionHint = hasDistanceSort
+    ? 'Sorted by distance from you'
+    : libraries.length > 0
+      ? 'Showing available libraries'
+      : null;
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Nearby libraries</h2>
+          {sectionHint && (
+            <p className="text-xs text-slate-400 mt-0.5">{sectionHint}</p>
+          )}
+        </div>
+        <Link to="/libraries" className="text-sm text-purple-400 hover:text-purple-300 shrink-0">
+          View all
+        </Link>
+      </div>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+        </div>
+      ) : libraries.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4">
+          {libraries.map((library) => (
+            <LibraryCard key={library.id} library={library} disableReveal />
+          ))}
+        </div>
+      ) : (
+        <p className="text-slate-400 text-center py-8 rounded-xl border border-slate-700/50 bg-slate-800/30">
+          No libraries available right now. Please try again later.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function SeatBookingSection({ isLoggedIn = false }) {
+  const navigate = useNavigate();
+
+  if (isLoggedIn) {
+    return (
+      <section className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-600/10 to-teal-600/10 p-5">
+        <h2 className="text-lg font-semibold text-white mb-2">Book your seat</h2>
+        <p className="text-sm text-slate-300 mb-4">
+          Reserve a seat at your library, pick a plan, and complete payment in a few steps.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/student/book-seat')}
+          className="w-full inline-flex items-center justify-center px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold shadow-lg active:scale-[0.98] transition-transform"
+        >
+          Open seat booking
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h2 className="text-lg font-semibold text-white mb-1">Book without an account</h2>
+      <p className="text-sm text-slate-400 mb-4">Select a library, choose a plan, and pay securely.</p>
+      <AnonymousBookingForm />
+    </section>
+  );
+}
+
+function StudentGuestHome({ userLocation, libraries, loading, usingFallbackList }) {
   const navigate = useNavigate();
 
   return (
-    <div className="px-4 py-6 space-y-8">
-      <section>
-        <h1 className="text-2xl font-bold text-white mb-2">Find a library near you</h1>
-        <p className="text-slate-400 text-sm">
-          {userLocation
-            ? 'Libraries sorted by distance. Book a seat without signing in.'
-            : 'Browse libraries and book a seat. Enable location for nearest results.'}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
+    <div className="pb-8">
+      <AppHomeHero
+        badge="Find your study space"
+        title="Discover libraries near you"
+        subtitle="Browse nearby libraries, compare availability, and book a seat without signing in."
+      >
+        <div className="flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() => navigate('/book-seat')}
-            className="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold shadow-lg"
+            className="hero-cta-primary inline-flex items-center px-5 py-2.5 rounded-xl text-white text-sm font-semibold"
           >
             Book Your Seat
           </button>
           <Link
             to="/student/login"
-            className="inline-flex items-center px-5 py-2.5 rounded-xl border border-slate-600 text-slate-200 text-sm font-semibold hover:bg-slate-800/60"
+            className="hero-cta-secondary inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold"
           >
-            Already registered? Sign In
+            Sign In
           </Link>
         </div>
-      </section>
+      </AppHomeHero>
 
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Nearby libraries</h2>
-          <Link to="/libraries" className="text-sm text-purple-400 hover:text-purple-300">
-            View all
-          </Link>
-        </div>
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-          </div>
-        ) : libraries.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {libraries.map((library, index) => (
-              <LibraryCard key={library.id} library={library} animationIndex={index} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-slate-400 text-center py-8">No libraries found. Try again later.</p>
-        )}
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-white mb-4">Book without an account</h2>
-        <AnonymousBookingForm />
-      </section>
+      <div className="px-4 pt-6 space-y-8">
+        <NearbyLibrariesSection
+          libraries={libraries}
+          loading={loading}
+          userLocation={userLocation}
+          usingFallbackList={usingFallbackList}
+        />
+        <SeatBookingSection />
+      </div>
     </div>
   );
 }
 
-function StudentLoggedInHome({ userLocation, libraries, loading }) {
-  return (
-    <div className="px-4 py-6 space-y-8">
-      <section>
-        <h1 className="text-2xl font-bold text-white mb-4">Welcome back</h1>
-        <div className="grid grid-cols-2 gap-3">
-          <QuickAction to="/student/dashboard" label="Dashboard" description="Your overview" />
-          <QuickAction to="/student/book-seat" label="Book Seat" description="Reserve a seat" color="emerald" />
-          <QuickAction to="/student/messages" label="Messages" description="Chat with admin" color="blue" />
-          <QuickAction to="/student/attendance" label="Attendance" description="Mark attendance" color="amber" />
-        </div>
-      </section>
+function StudentLoggedInHome({ user, userLocation, libraries, loading, usingFallbackList }) {
+  const displayName = user?.name || user?.email || 'Student';
 
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Libraries near you</h2>
-          <Link to="/libraries" className="text-sm text-purple-400 hover:text-purple-300">
-            View all
-          </Link>
-        </div>
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-          </div>
-        ) : libraries.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {libraries.map((library, index) => (
-              <LibraryCard key={library.id} library={library} animationIndex={index} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-slate-400 text-center py-8">No libraries found.</p>
-        )}
-        {userLocation && (
-          <p className="text-xs text-slate-500 mt-2 text-center">Sorted by distance from your location</p>
-        )}
-      </section>
+  return (
+    <div className="pb-8">
+      <AppHomeHero
+        badge="Student portal"
+        title={`Welcome back, ${displayName.split('@')[0]}`}
+        subtitle="Explore nearby libraries and manage your study space from one place."
+      />
+
+      <div className="px-4 pt-6 space-y-8">
+        <NearbyLibrariesSection
+          libraries={libraries}
+          loading={loading}
+          userLocation={userLocation}
+          usingFallbackList={usingFallbackList}
+        />
+        <SeatBookingSection isLoggedIn />
+      </div>
     </div>
   );
 }
 
-function AdminLoggedInHome() {
+function AdminLoggedInHome({ user }) {
+  const libraryName = user?.library_name || 'Your Library';
+  const adminName = user?.admin_name || user?.name || user?.email || 'Admin';
+
   return (
-    <div className="px-4 py-6 space-y-6">
-      <section>
-        <h1 className="text-2xl font-bold text-white mb-2">Admin Home</h1>
-        <p className="text-slate-400 text-sm mb-4">Quick access to your library management tools.</p>
-        <div className="grid grid-cols-2 gap-3">
-          <QuickAction to="/admin/dashboard" label="Dashboard" description="Stats & overview" />
-          <QuickAction to="/admin/students" label="Students" description="Manage students" color="emerald" />
-          <QuickAction to="/admin/messages" label="Messages" description="Student chat" color="blue" />
-          <QuickAction to="/admin/scanner" label="QR Scanner" description="Attendance" color="amber" />
-          <QuickAction to="/admin/seats" label="Seats" description="Seat layout" />
-          <QuickAction to="/admin/platform-subscription" label="Subscription" description="Platform plan" color="emerald" />
-        </div>
-      </section>
+    <div className="pb-8">
+      <AppHomeHero
+        badge={libraryName}
+        title={`Welcome, ${adminName.split('@')[0]}`}
+        subtitle="Manage bookings, students, seats, and messages from your library dashboard."
+      />
+
+      <div className="px-4 pt-6 space-y-6">
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-3">Quick access</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <QuickAction to="/admin/dashboard" label="Dashboard" description="Stats & overview" />
+            <QuickAction to="/admin/students" label="Students" description="Manage students" color="emerald" />
+            <QuickAction to="/admin/messages" label="Messages" description="Student chat" color="blue" />
+            <QuickAction to="/admin/scanner" label="QR Scanner" description="Attendance" color="amber" />
+            <QuickAction to="/admin/seats" label="Seats" description="Seat layout" />
+            <QuickAction to="/admin/booking-management" label="Bookings" description="Approve requests" color="amber" />
+            <QuickAction to="/admin/platform-subscription" label="Subscription" description="Platform plan" color="emerald" />
+            <QuickAction to="/admin/student-removal-requests" label="Removals" description="Review requests" color="blue" />
+          </div>
+        </section>
+
+        <AppAdminHomePanels />
+      </div>
     </div>
   );
 }
 
 export default function AppHome() {
   const navigate = useNavigate();
-  const { isLoggedIn, userType, selectedRole, setRole } = useAuth();
+  const { isLoggedIn, userType, selectedRole, setRole, user } = useAuth();
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const { libraries, loading, userLocation } = useNearbyLibraries(6);
+  const { libraries, loading, userLocation, usingFallbackList } = useNearbyLibraries(NEARBY_LIBRARY_COUNT);
 
   useEffect(() => {
     if (selectedRole === 'admin' && !isLoggedIn) {
@@ -174,16 +231,30 @@ export default function AppHome() {
   if (!selectedRole && !isLoggedIn) {
     return (
       <>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Welcome to Library Connekto</h1>
-          <p className="text-slate-400 mb-6">Choose how you want to continue</p>
-          <button
-            type="button"
-            onClick={() => setShowRoleModal(true)}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
+        <div className="pb-8">
+          <AppHomeHero
+            badge="Smart library management"
+            title="Welcome to Library Connekto"
+            subtitle="Choose your role to access the student portal or manage your library."
           >
-            Choose Your Role
-          </button>
+            <button
+              type="button"
+              onClick={() => setShowRoleModal(true)}
+              className="hero-cta-primary inline-flex items-center px-6 py-3 rounded-xl text-white font-semibold"
+            >
+              Choose Your Role
+            </button>
+          </AppHomeHero>
+          <div className="px-4 pt-6 flex flex-col items-center text-center">
+            <img
+              src={APP_LOGO_URL}
+              alt="Library Connekto"
+              className="h-20 w-20 rounded-2xl shadow-xl ring-2 ring-purple-500/30 bg-white object-contain p-1 mb-4"
+            />
+            <p className="text-slate-400 text-sm max-w-xs">
+              Students can find libraries and book seats. Admins can run their library from anywhere.
+            </p>
+          </div>
         </div>
         <SelectRoleModal
           open={showRoleModal}
@@ -196,17 +267,30 @@ export default function AppHome() {
   }
 
   if (isLoggedIn && userType === 'admin') {
-    return <AdminLoggedInHome />;
+    return <AdminLoggedInHome user={user} />;
   }
 
   if (isLoggedIn && userType === 'student') {
-    return <StudentLoggedInHome userLocation={userLocation} libraries={libraries} loading={loading} />;
+    return (
+      <StudentLoggedInHome
+        user={user}
+        userLocation={userLocation}
+        libraries={libraries}
+        loading={loading}
+        usingFallbackList={usingFallbackList}
+      />
+    );
   }
 
   if (selectedRole === 'student') {
     return (
       <>
-        <StudentGuestHome userLocation={userLocation} libraries={libraries} loading={loading} />
+        <StudentGuestHome
+          userLocation={userLocation}
+          libraries={libraries}
+          loading={loading}
+          usingFallbackList={usingFallbackList}
+        />
         <SelectRoleModal
           open={showRoleModal}
           onClose={() => setShowRoleModal(false)}

@@ -4,6 +4,9 @@
  */
 import frontImage from '../assets/Front.png';
 import logoImage from '../assets/Logo.png';
+
+/** Primary logo — served from public/Logo.png (web, Vercel, Capacitor APK) */
+export const APP_LOGO_URL = '/Logo.png';
 import libImage from '../assets/Lib.jpeg';
 import lib1Image from '../assets/Lib1.jpeg';
 import lib2Image from '../assets/Lib2.jpeg';
@@ -12,7 +15,8 @@ import libraryApk from '../assets/LibraryConnekto.apk?url';
 
 export const ASSETS = {
   front: frontImage,
-  logo: logoImage,
+  logo: APP_LOGO_URL,
+  logoBundled: logoImage,
   lib: libImage,
   lib1: lib1Image,
   lib2: lib2Image,

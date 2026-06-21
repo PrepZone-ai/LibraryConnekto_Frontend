@@ -4,7 +4,7 @@ import { ASSETS } from '../../lib/assets';
 
 import { withScrollReveal } from '../../utils/scrollAnimations';
 
-const LibraryCard = ({ library, animationIndex }) => {
+const LibraryCard = ({ library, animationIndex, disableReveal = false }) => {
   const navigate = useNavigate();
   
   const availableSeats = library.total_seats - library.occupied_seats;
@@ -29,7 +29,7 @@ const LibraryCard = ({ library, animationIndex }) => {
 
   return (
     <div
-      {...(animationIndex !== undefined
+      {...(!disableReveal && animationIndex !== undefined
         ? withScrollReveal(animationIndex, cardClassName)
         : { className: cardClassName })}
       onClick={handleViewDetails}
