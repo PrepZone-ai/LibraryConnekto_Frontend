@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import DownloadAppButton from './DownloadAppButton';
-import { ASSETS } from '../../lib/assets';
 import { isAppMode } from '../../hooks/useAppMode';
+import { triggerApkDownload } from '../../lib/apkDownload';
 
 const DownloadAppSection = ({ className = '' }) => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -14,18 +14,7 @@ const DownloadAppSection = ({ className = '' }) => {
     setIsDownloading(true);
     
     try {
-      // Create a temporary link element to trigger download
-      const link = document.createElement('a');
-      link.href = ASSETS.apk;
-      link.download = 'LibraryConnekto.apk';
-      link.style.display = 'none';
-      
-      // Append to body, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Show success message
+      triggerApkDownload();
       setTimeout(() => {
         setIsDownloading(false);
       }, 2000);

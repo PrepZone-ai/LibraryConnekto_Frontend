@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ASSETS } from '../../lib/assets';
 import { isAppMode } from '../../hooks/useAppMode';
+import { triggerApkDownload } from '../../lib/apkDownload';
 
 const DownloadAppButton = ({ 
   variant = 'primary', 
@@ -24,14 +24,7 @@ const DownloadAppButton = ({
     setIsDownloading(true);
 
     try {
-      const link = document.createElement('a');
-      link.href = ASSETS.apk;
-      link.download = 'LibraryConnekto.apk';
-      link.style.display = 'none';
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      triggerApkDownload();
 
       setTimeout(() => {
         setIsDownloading(false);
