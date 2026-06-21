@@ -1,0 +1,17 @@
+{
+  "appId": "com.libraryconnekto.app",
+  "appName": "Library Connekto",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#1a1f2b"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#1a1f2b"
+    }
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

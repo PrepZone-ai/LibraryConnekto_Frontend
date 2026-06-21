@@ -622,3 +622,29 @@ section .mx-auto {
     transition: none;
   }
 }
+
+/* Website shell — preserve space for fixed marketing header */
+.website-shell main.flex-1 > div.min-h-screen:first-child {
+  /* Home hero uses pt-16 for fixed Header; other pages manage their own spacing */
+}
+
+/* App shell — no marketing header offset on nested page roots */
+.app-shell main.flex-1 > div.min-h-screen {
+  min-height: auto;
+}
+
+.pb-bottom-nav {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pt-app-topbar {
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+}

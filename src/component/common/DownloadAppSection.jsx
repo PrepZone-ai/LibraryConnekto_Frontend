@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import DownloadAppButton from './DownloadAppButton';
 import { ASSETS } from '../../lib/assets';
+import { isAppMode } from '../../hooks/useAppMode';
 
 const DownloadAppSection = ({ className = '' }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+
+  if (isAppMode()) {
+    return null;
+  }
 
   const handleDownload = async () => {
     setIsDownloading(true);

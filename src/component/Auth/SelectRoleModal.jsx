@@ -4,9 +4,9 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { ASSETS } from '../../lib/assets'
 
-export default function SelectRoleModal({ open, onClose, onSelect }) {
+export default function SelectRoleModal({ open, onClose, onSelect, appMode = false }) {
   const navigate = useNavigate()
-  const { isLoggedIn, userType } = useAuth()
+  const { isLoggedIn } = useAuth()
   
   useEffect(() => {
     const onEsc = (e) => {
@@ -22,10 +22,13 @@ export default function SelectRoleModal({ open, onClose, onSelect }) {
     onSelect?.(role)
     onClose()
     if (isLoggedIn) {
-      // Logged-in user changed role context → go to that role's home
       navigate(role === 'admin' ? '/admin/dashboard' : '/student/dashboard', { replace: true })
+    } else if (appMode) {
+      if (role === 'admin') {
+        navigate('/admin/auth')
+      }
+      // Student in app mode: stay on App Home (no redirect)
     } else {
-      // Not logged in → send to the login page for that role
       navigate(role === 'admin' ? '/admin/auth' : '/student/login')
     }
   }

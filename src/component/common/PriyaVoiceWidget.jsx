@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { isAppMode } from '../../hooks/useAppMode';
 
 /** Marketing link: https://libraryconnekto.me/?call=priya */
 export const PRIYA_CALL_QUERY = 'call';
@@ -219,7 +220,7 @@ export default function PriyaVoiceWidget() {
     startPriyaCall,
   ]);
 
-  if (!shouldShowPriyaWidget(pathname)) {
+  if (isAppMode() || !shouldShowPriyaWidget(pathname)) {
     return null;
   }
 

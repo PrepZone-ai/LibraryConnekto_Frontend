@@ -1,76 +1,60 @@
-# PowerShell script to build APK for Library Connekto PWA
-# This script creates a TWA (Trusted Web Activity) APK without Capacitor
+# PowerShell script to build Capacitor APK for Library Connekto
 
-Write-Host "Building Library Connekto APK..." -ForegroundColor Green
+Write-Host "Building Library Connekto Capacitor APK..." -ForegroundColor Green
 
-# Check if Android SDK is installed
 if (-not (Test-Path "$env:ANDROID_HOME")) {
     Write-Host "ANDROID_HOME environment variable not set. Please install Android SDK." -ForegroundColor Red
-    Write-Host "Download from: https://developer.android.com/studio" -ForegroundColor Yellow
     exit 1
 }
 
-# Check if Java is installed
 try {
-    $javaVersion = java -version 2>&1
-    Write-Host "Java found: $($javaVersion[0])" -ForegroundColor Green
+    java -version 2>&1 | Out-Null
 } catch {
-    Write-Host "Java not found. Please install Java JDK 8 or higher." -ForegroundColor Red
+    Write-Host "Java not found. Please install Java JDK." -ForegroundColor Red
     exit 1
 }
 
-# Navigate to android directory
+$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $root
+
+Write-Host "Building web assets..." -ForegroundColor Yellow
+npm run build
+if ($LASTEXITCODE -ne 0) { exit 1 }
+
+Write-Host "Syncing Capacitor Android..." -ForegroundColor Yellow
+npx cap sync android
+if ($LASTEXITCODE -ne 0) { exit 1 }
+
 Set-Location "android"
 
-# Generate debug keystore if it doesn't exist
 if (-not (Test-Path "app/debug.keystore")) {
-    Write-Host "Generating debug keystore..." -ForegroundColor Yellow
-    keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+    if (Test-Path "../keystore-backup/debug.keystore") {
+        Copy-Item "../keystore-backup/debug.keystore" "app/debug.keystore" -Force
+    } else {
+        keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+    }
 }
 
-# Generate release keystore if it doesn't exist
 if (-not (Test-Path "app/release.keystore")) {
-    Write-Host "Generating release keystore..." -ForegroundColor Yellow
-    keytool -genkey -v -keystore app/release.keystore -storepass libraryconnekto123 -alias libraryconnekto -keypass libraryconnekto123 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Library Connekto,O=Library Connekto,C=US"
+    if (Test-Path "../keystore-backup/release.keystore") {
+        Copy-Item "../keystore-backup/release.keystore" "app/release.keystore" -Force
+    } else {
+        keytool -genkey -v -keystore app/release.keystore -storepass libraryconnekto123 -alias libraryconnekto -keypass libraryconnekto123 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Library Connekto,O=Library Connekto,C=US"
+    }
 }
 
-# Clean previous builds
-Write-Host "Cleaning previous builds..." -ForegroundColor Yellow
-./gradlew clean
-
-# Build debug APK
 Write-Host "Building debug APK..." -ForegroundColor Yellow
 ./gradlew assembleDebug
+if ($LASTEXITCODE -ne 0) { exit 1 }
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Debug APK built successfully!" -ForegroundColor Green
-    Write-Host "APK location: android/app/build/outputs/apk/debug/app-debug.apk" -ForegroundColor Cyan
-} else {
-    Write-Host "Debug APK build failed!" -ForegroundColor Red
-    exit 1
-}
-
-# Build release APK
 Write-Host "Building release APK..." -ForegroundColor Yellow
 ./gradlew assembleRelease
+if ($LASTEXITCODE -ne 0) { exit 1 }
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Release APK built successfully!" -ForegroundColor Green
-    Write-Host "APK location: android/app/build/outputs/apk/release/app-release.apk" -ForegroundColor Cyan
-} else {
-    Write-Host "Release APK build failed!" -ForegroundColor Red
-    exit 1
-}
-
-# Copy APKs to root directory for easy access
-Write-Host "Copying APKs to root directory..." -ForegroundColor Yellow
 Copy-Item "app/build/outputs/apk/debug/app-debug.apk" "../Library-Connekto-Debug.apk" -Force
 Copy-Item "app/build/outputs/apk/release/app-release.apk" "../Library-Connekto-Release.apk" -Force
 
-Write-Host "APK build completed successfully!" -ForegroundColor Green
-Write-Host "Debug APK: Library-Connekto-Debug.apk" -ForegroundColor Cyan
-Write-Host "Release APK: Library-Connekto-Release.apk" -ForegroundColor Cyan
-
-# Return to root directory
 Set-Location ".."
-
+Write-Host "APK build completed!" -ForegroundColor Green
+Write-Host "Debug: Library-Connekto-Debug.apk" -ForegroundColor Cyan
+Write-Host "Release: Library-Connekto-Release.apk" -ForegroundColor Cyan

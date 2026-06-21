@@ -1,4 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">Library Connekto</string>
+    <string name="title_activity_main">Library Connekto</string>
+    <string name="package_name">com.libraryconnekto.app</string>
+    <string name="custom_url_scheme">com.libraryconnekto.app</string>
 </resources>
-

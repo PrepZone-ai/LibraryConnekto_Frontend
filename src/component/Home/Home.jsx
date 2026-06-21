@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { isAppMode } from '../../hooks/useAppMode';
 import SelectRoleModal from '../Auth/SelectRoleModal';
 import AnonymousBookingForm from '../Booking/AnonymousBookingForm';
 import DownloadAppButton from '../common/DownloadAppButton';
@@ -91,6 +92,8 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (isAppMode()) return;
+
     // Check if user has visited before and show role modal if needed
     const hasVisited = localStorage.getItem('hasVisited');
     const storedRole = localStorage.getItem('selectedRole');

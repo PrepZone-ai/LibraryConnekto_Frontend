@@ -1,8 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Capacitor } from '@capacitor/core'
 import './index.css'
 import App from './App.jsx'
+import { initCapacitorApp } from './lib/capacitorInit.js'
 
 if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual'
@@ -28,9 +30,10 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-// Keep PWA service worker only in production.
-// In dev, remove old registrations/caches so Vite module requests are not intercepted.
-if ('serviceWorker' in navigator) {
+void initCapacitorApp()
+
+// Service worker for website/PWA only — not used in Capacitor native WebView
+if ('serviceWorker' in navigator && !Capacitor.isNativePlatform()) {
   window.addEventListener('load', async () => {
     if (import.meta.env.PROD) {
       try {

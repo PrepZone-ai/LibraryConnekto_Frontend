@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ASSETS } from '../../lib/assets';
+import { isAppMode } from '../../hooks/useAppMode';
 
 const DownloadAppButton = ({ 
   variant = 'primary', 
@@ -10,6 +11,10 @@ const DownloadAppButton = ({
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
+  if (isAppMode()) {
+    return null;
+  }
+
   const handleDownload = async () => {
     if (onClick) {
       onClick();
@@ -17,23 +22,19 @@ const DownloadAppButton = ({
     }
 
     setIsDownloading(true);
-    
+
     try {
-      // Create a temporary link element to trigger download
       const link = document.createElement('a');
       link.href = ASSETS.apk;
       link.download = 'LibraryConnekto.apk';
       link.style.display = 'none';
-      
-      // Append to body, click, and remove
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Show success message
+
       setTimeout(() => {
         setIsDownloading(false);
-        // You can add a toast notification here if needed
       }, 2000);
     } catch (error) {
       console.error('Download failed:', error);

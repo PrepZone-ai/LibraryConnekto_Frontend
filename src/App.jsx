@@ -10,7 +10,7 @@ import StudentLogin from './component/Auth/StudentLogin'
 import StudentSetPassword from './component/Auth/StudentSetPassword'
 import AnonymousBookingPage from './component/Booking/AnonymousBookingPage'
 import Contact from './component/Contact/Contact'
-import Home from './component/Home/Home'
+import HomeRoute from './component/Home/HomeRoute'
 import AdminDetailsGate from './component/Admin/AdminDetailsGate'
 import AdminPlatformSubscriptionGate from './component/Admin/AdminPlatformSubscriptionGate'
 import AppLayout from './component/Layout/AppLayout'
@@ -66,7 +66,7 @@ function App() {
           <Route element={<AdminDetailsGate />}>
           <Route element={<AppLayout />}>
             {/* Public Routes */}
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
